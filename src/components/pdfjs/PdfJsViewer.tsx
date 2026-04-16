@@ -1,12 +1,16 @@
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { usePdfPage } from '../../hooks/usePdfPage'
 import MarksOverlay from './MarksOverlay'
+import { PdfMark } from '../../types/marks'
 
 interface Props {
   pdfUrl: string
+  marks: PdfMark[]
+  isAdding: boolean
+  onMarkAdded: (x: number, y: number) => void
 }
 
-export default function PdfJsViewer({ pdfUrl }: Props) {
+export default function PdfJsViewer({ pdfUrl, marks, isAdding, onMarkAdded }: Props) {
   const { canvasRef, pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx, isLoading, error } =
     usePdfPage(pdfUrl, 1.5)
 
@@ -24,7 +28,8 @@ export default function PdfJsViewer({ pdfUrl }: Props) {
         minScale={0.3}
         maxScale={10}
         wheel={{ step: 0.1 }}
-        panning={{ disabled: false }}
+        // Disable panning while add mode is active so clicks go to the SVG overlay
+        panning={{ disabled: isAdding }}
       >
         <TransformComponent
           wrapperStyle={{ width: '100%', height: '100%' }}
@@ -34,10 +39,13 @@ export default function PdfJsViewer({ pdfUrl }: Props) {
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <canvas ref={canvasRef as any} style={{ display: 'block' }} />
           <MarksOverlay
+            marks={marks}
             pageWidthPt={pageWidthPt}
             pageHeightPt={pageHeightPt}
             canvasWidthPx={canvasWidthPx}
             canvasHeightPx={canvasHeightPx}
+            isAdding={isAdding}
+            onMarkAdded={onMarkAdded}
           />
         </TransformComponent>
       </TransformWrapper>

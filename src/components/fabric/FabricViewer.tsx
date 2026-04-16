@@ -1,19 +1,34 @@
 import { useEffect, useRef } from 'react'
 import { Canvas, Circle, FabricImage, FabricText, Point } from 'fabric'
 import { usePdfPageDataUrl } from '../../hooks/usePdfPage'
-import { HARDCODED_MARKS } from '../../types/marks'
+import { PdfMark, HARDCODED_MARKS } from '../../types/marks'
 
 interface Props {
   pdfUrl: string
+  marks: PdfMark[]
+  isAdding: boolean
+  onMarkAdded: (x: number, y: number) => void
 }
 
-export default function FabricViewer({ pdfUrl }: Props) {
+const hardcodedIds = new Set(HARDCODED_MARKS.map((m) => m.id))
+
+export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasElRef = useRef<HTMLCanvasElement>(null)
   const fabricRef = useRef<Canvas | null>(null)
 
+  // Keep latest prop values accessible inside stable event handlers
+  const isAddingRef = useRef(isAdding)
+  const onMarkAddedRef = useRef(onMarkAdded)
+  const geometryRef = useRef({ pageWidthPt: 0, pageHeightPt: 0, canvasWidthPx: 0, canvasHeightPx: 0 })
+
+  isAddingRef.current = isAdding
+  onMarkAddedRef.current = onMarkAdded
+
   const { dataUrl, pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx, isLoading, error } =
     usePdfPageDataUrl(pdfUrl, 1.5)
+
+  geometryRef.current = { pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx }
 
   // Initialize Fabric canvas once
   useEffect(() => {
@@ -37,13 +52,16 @@ export default function FabricViewer({ pdfUrl }: Props) {
       e.stopPropagation()
     })
 
-    // Pan with mouse drag
+    // Pan or place mark on mouse down
     let isPanning = false
     let lastX = 0
     let lastY = 0
+    let didMove = false
 
     fc.on('mouse:down', (opt) => {
+      if (isAddingRef.current) return // adding mode: don't pan
       isPanning = true
+      didMove = false
       const me = opt.e as MouseEvent
       lastX = me.clientX
       lastY = me.clientY
@@ -51,14 +69,29 @@ export default function FabricViewer({ pdfUrl }: Props) {
     fc.on('mouse:move', (opt) => {
       if (!isPanning) return
       const me = opt.e as MouseEvent
+      const dx = me.clientX - lastX
+      const dy = me.clientY - lastY
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) didMove = true
       const vpt = fc.viewportTransform
-      vpt[4] += me.clientX - lastX
-      vpt[5] += me.clientY - lastY
+      vpt[4] += dx
+      vpt[5] += dy
       fc.requestRenderAll()
       lastX = me.clientX
       lastY = me.clientY
     })
-    fc.on('mouse:up', () => { isPanning = false })
+    fc.on('mouse:up', (opt) => {
+      isPanning = false
+      if (isAddingRef.current && !didMove) {
+        // Place a mark at this position in PDF coordinate space
+        const pointer = fc.getScenePoint(opt.e)
+        const { pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx } = geometryRef.current
+        if (!canvasWidthPx) return
+        const pdfX = pointer.x * (pageWidthPt / canvasWidthPx)
+        const pdfY = pageHeightPt - pointer.y * (pageHeightPt / canvasHeightPx)
+        onMarkAddedRef.current(pdfX, pdfY)
+      }
+      didMove = false
+    })
 
     // Resize canvas to fill container
     function resize() {
@@ -78,7 +111,7 @@ export default function FabricViewer({ pdfUrl }: Props) {
     }
   }, [])
 
-  // Load PDF image + marks into Fabric whenever PDF data is ready
+  // Re-render marks whenever marks array or PDF geometry changes
   useEffect(() => {
     const fc = fabricRef.current
     if (!fc || !dataUrl || !pageWidthPt) return
@@ -94,15 +127,16 @@ export default function FabricViewer({ pdfUrl }: Props) {
       const scaleX = canvasWidthPx / pageWidthPt
       const scaleY = canvasHeightPx / pageHeightPt
 
-      for (const mark of HARDCODED_MARKS) {
+      for (const mark of marks) {
         const left = Math.round(mark.x * scaleX)
         const top = Math.round((pageHeightPt - mark.y) * scaleY)
+        const isUser = !hardcodedIds.has(mark.id)
 
         const circle = new Circle({
           left: left - 10,
           top: top - 10,
           radius: 10,
-          fill: 'rgba(255,80,80,0.85)',
+          fill: isUser ? 'rgba(80,180,255,0.9)' : 'rgba(255,80,80,0.85)',
           stroke: 'white',
           strokeWidth: 2,
           selectable: false,
@@ -129,10 +163,18 @@ export default function FabricViewer({ pdfUrl }: Props) {
     }
 
     loadContent()
-  }, [dataUrl, pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx])
+  }, [dataUrl, pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx, marks])
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        cursor: isAdding ? 'crosshair' : 'default',
+      }}
+    >
       {isLoading && (
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: 'white', zIndex: 10 }}>
           Loading PDF…
@@ -141,6 +183,15 @@ export default function FabricViewer({ pdfUrl }: Props) {
       {error && (
         <div style={{ position: 'absolute', top: '1rem', left: '1rem', color: 'red', zIndex: 10 }}>
           Error: {error}
+        </div>
+      )}
+      {isAdding && (
+        <div style={{
+          position: 'absolute', top: '0.5rem', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(26,107,58,0.9)', color: '#4ade80', padding: '0.3rem 1rem',
+          borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, zIndex: 20, pointerEvents: 'none',
+        }}>
+          Click anywhere on the PDF to place a mark
         </div>
       )}
       <canvas ref={canvasElRef} />

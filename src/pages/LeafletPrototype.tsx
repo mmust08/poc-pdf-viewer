@@ -1,16 +1,43 @@
-import { Link } from 'react-router-dom'
+import { useState, useCallback } from 'react'
+import Toolbar from '../components/shared/Toolbar'
 import LeafletViewer from '../components/leaflet/LeafletViewer'
+import { useMarks } from '../hooks/useMarks'
 
 export default function LeafletPrototype() {
+  const [pdfUrl, setPdfUrl] = useState('/sample-blueprint.pdf')
+  const [pdfName, setPdfName] = useState('sample-blueprint.pdf')
+  const [isAdding, setIsAdding] = useState(false)
+  const { marks, userMarkCount, addMark, clearUserMarks } = useMarks()
+
+  const handleMarkAdded = useCallback((x: number, y: number) => {
+    addMark(x, y)
+  }, [addMark])
+
+  function handlePdfLoaded(url: string, name: string) {
+    setPdfUrl(url)
+    setPdfName(name)
+    setIsAdding(false)
+    clearUserMarks()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <header style={{ background: '#16213e', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid #2a4080', flexShrink: 0 }}>
-        <Link to="/" style={{ color: '#7eb8f7' }}>← Back</Link>
-        <h2 style={{ margin: 0, fontSize: '1rem' }}>Prototype 3 — Leaflet.js (CRS.Simple)</h2>
-        <span style={{ color: '#aaa', fontSize: '0.85rem' }}>Scroll to zoom · Drag to pan</span>
-      </header>
+      <Toolbar
+        title={`Prototype 3 — Leaflet.js · ${pdfName}`}
+        hint={isAdding ? undefined : 'Scroll to zoom · Drag to pan'}
+        isAdding={isAdding}
+        onToggleAdding={() => setIsAdding((v) => !v)}
+        userMarkCount={userMarkCount}
+        onClearUserMarks={clearUserMarks}
+        onPdfLoaded={handlePdfLoaded}
+      />
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <LeafletViewer pdfUrl="/sample-blueprint.pdf" />
+        <LeafletViewer
+          pdfUrl={pdfUrl}
+          marks={marks}
+          isAdding={isAdding}
+          onMarkAdded={handleMarkAdded}
+        />
       </div>
     </div>
   )
