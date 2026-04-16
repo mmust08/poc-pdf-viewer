@@ -1,0 +1,79 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 1684 2384] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+
+<< /Length 1040 >>
+stream
+0.95 0.95 1 rg
+0 0 1684 2384 re f
+0.7 0.7 0.85 RG 0.5 w
+50 0 m 1634 0 l S
+50 200 m 1634 200 l S
+50 400 m 1634 400 l S
+50 600 m 1634 600 l S
+50 800 m 1634 800 l S
+50 1000 m 1634 1000 l S
+50 1200 m 1634 1200 l S
+50 1400 m 1634 1400 l S
+50 1600 m 1634 1600 l S
+50 1800 m 1634 1800 l S
+50 2000 m 1634 2000 l S
+50 2200 m 1634 2200 l S
+0 50 m 0 2334 l S
+200 50 m 200 2334 l S
+400 50 m 400 2334 l S
+600 50 m 600 2334 l S
+800 50 m 800 2334 l S
+1000 50 m 1000 2334 l S
+1200 50 m 1200 2334 l S
+1400 50 m 1400 2334 l S
+1600 50 m 1600 2334 l S
+0 0 0.4 RG 2 w
+30 30 1624 2324 re S
+BT /F1 36 Tf 0 0 0 rg
+60 2284 Td
+(AJOURSYSTEM SAMPLE BLUEPRINT) Tj
+0 -50 Td /F1 20 Tf
+(AJB-14023 PDF Viewer Technology Evaluation) Tj
+0 -40 Td /F1 14 Tf
+(Page: 1684pt x 2384pt  |  5 registration marks at fixed PDF coordinates) Tj
+ET
+1 0 0 RG 2 w
+190 2090 20 20 re S
+830 1790 20 20 re S
+1390 1190 20 20 re S
+390 590 20 20 re S
+1190 290 20 20 re S
+BT /F1 12 Tf 0.7 0 0 rg
+215 2100 Td (M1) Tj
+855 1800 Td (M2) Tj
+1415 1200 Td (M3) Tj
+415 600 Td (M4) Tj
+1215 300 Td (M5) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000243 00000 n 
+0000001336 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1406
+%%EOF
