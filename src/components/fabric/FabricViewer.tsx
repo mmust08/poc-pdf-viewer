@@ -5,6 +5,8 @@ import { PdfMark, HARDCODED_MARKS } from '../../types/marks'
 
 interface Props {
   pdfUrl: string
+  pageNumber: number
+  onPageCountKnown: (count: number) => void
   marks: PdfMark[]
   isAdding: boolean
   onMarkAdded: (x: number, y: number) => void
@@ -12,12 +14,11 @@ interface Props {
 
 const hardcodedIds = new Set(HARDCODED_MARKS.map((m) => m.id))
 
-export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: Props) {
+export default function FabricViewer({ pdfUrl, pageNumber, onPageCountKnown, marks, isAdding, onMarkAdded }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasElRef = useRef<HTMLCanvasElement>(null)
   const fabricRef = useRef<Canvas | null>(null)
 
-  // Keep latest prop values accessible inside stable event handlers
   const isAddingRef = useRef(isAdding)
   const onMarkAddedRef = useRef(onMarkAdded)
   const geometryRef = useRef({ pageWidthPt: 0, pageHeightPt: 0, canvasWidthPx: 0, canvasHeightPx: 0 })
@@ -25,9 +26,10 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
   isAddingRef.current = isAdding
   onMarkAddedRef.current = onMarkAdded
 
-  const { dataUrl, pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx, isLoading, error } =
-    usePdfPageDataUrl(pdfUrl, 1.5)
+  const { dataUrl, pageCount, pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx, isLoading, error } =
+    usePdfPageDataUrl(pdfUrl, pageNumber, 1.5)
 
+  if (pageCount > 0) onPageCountKnown(pageCount)
   geometryRef.current = { pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx }
 
   // Initialize Fabric canvas once
@@ -35,13 +37,9 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
     const el = canvasElRef.current
     if (!el) return
 
-    const fc = new Canvas(el, {
-      selection: false,
-      backgroundColor: '#888',
-    })
+    const fc = new Canvas(el, { selection: false, backgroundColor: '#888' })
     fabricRef.current = fc
 
-    // Zoom with mouse wheel
     fc.on('mouse:wheel', (opt) => {
       const e = opt.e as WheelEvent
       let zoom = fc.getZoom()
@@ -52,14 +50,13 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
       e.stopPropagation()
     })
 
-    // Pan or place mark on mouse down
     let isPanning = false
     let lastX = 0
     let lastY = 0
     let didMove = false
 
     fc.on('mouse:down', (opt) => {
-      if (isAddingRef.current) return // adding mode: don't pan
+      if (isAddingRef.current) return
       isPanning = true
       didMove = false
       const me = opt.e as MouseEvent
@@ -82,7 +79,6 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
     fc.on('mouse:up', (opt) => {
       isPanning = false
       if (isAddingRef.current && !didMove) {
-        // Place a mark at this position in PDF coordinate space
         const pointer = fc.getScenePoint(opt.e)
         const { pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx } = geometryRef.current
         if (!canvasWidthPx) return
@@ -93,13 +89,9 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
       didMove = false
     })
 
-    // Resize canvas to fill container
     function resize() {
       if (!containerRef.current) return
-      fc.setDimensions({
-        width: containerRef.current.clientWidth,
-        height: containerRef.current.clientHeight,
-      })
+      fc.setDimensions({ width: containerRef.current.clientWidth, height: containerRef.current.clientHeight })
     }
     resize()
     window.addEventListener('resize', resize)
@@ -111,7 +103,7 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
     }
   }, [])
 
-  // Re-render marks whenever marks array or PDF geometry changes
+  // Re-render content whenever PDF page data or marks change
   useEffect(() => {
     const fc = fabricRef.current
     if (!fc || !dataUrl || !pageWidthPt) return
@@ -132,31 +124,17 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
         const top = Math.round((pageHeightPt - mark.y) * scaleY)
         const isUser = !hardcodedIds.has(mark.id)
 
-        const circle = new Circle({
-          left: left - 10,
-          top: top - 10,
-          radius: 10,
+        fc.add(new Circle({
+          left: left - 10, top: top - 10, radius: 10,
           fill: isUser ? 'rgba(80,180,255,0.9)' : 'rgba(255,80,80,0.85)',
-          stroke: 'white',
-          strokeWidth: 2,
-          selectable: false,
-          evented: false,
-        })
+          stroke: 'white', strokeWidth: 2, selectable: false, evented: false,
+        }))
 
-        const label = new FabricText(mark.label, {
-          left: left + 14,
-          top: top - 8,
-          fontSize: 13,
-          fontWeight: 'bold',
-          fill: 'white',
-          stroke: 'black',
-          strokeWidth: 2,
-          paintFirst: 'stroke',
-          selectable: false,
-          evented: false,
-        })
-
-        fc.add(circle, label)
+        fc.add(new FabricText(mark.label, {
+          left: left + 14, top: top - 8, fontSize: 13, fontWeight: 'bold',
+          fill: 'white', stroke: 'black', strokeWidth: 2, paintFirst: 'stroke',
+          selectable: false, evented: false,
+        }))
       }
 
       fc.requestRenderAll()
@@ -165,16 +143,15 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
     loadContent()
   }, [dataUrl, pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx, marks])
 
+  // Reset viewport when page changes
+  useEffect(() => {
+    const fc = fabricRef.current
+    if (!fc) return
+    fc.setViewportTransform([1, 0, 0, 1, 0, 0])
+  }, [pageNumber])
+
   return (
-    <div
-      ref={containerRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        position: 'relative',
-        cursor: isAdding ? 'crosshair' : 'default',
-      }}
-    >
+    <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', cursor: isAdding ? 'crosshair' : 'default' }}>
       {isLoading && (
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: 'white', zIndex: 10 }}>
           Loading PDF…
@@ -186,11 +163,7 @@ export default function FabricViewer({ pdfUrl, marks, isAdding, onMarkAdded }: P
         </div>
       )}
       {isAdding && (
-        <div style={{
-          position: 'absolute', top: '0.5rem', left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(26,107,58,0.9)', color: '#4ade80', padding: '0.3rem 1rem',
-          borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, zIndex: 20, pointerEvents: 'none',
-        }}>
+        <div style={{ position: 'absolute', top: '0.5rem', left: '50%', transform: 'translateX(-50%)', background: 'rgba(26,107,58,0.9)', color: '#4ade80', padding: '0.3rem 1rem', borderRadius: 6, fontSize: '0.85rem', fontWeight: 600, zIndex: 20, pointerEvents: 'none' }}>
           Click anywhere on the PDF to place a mark
         </div>
       )}
