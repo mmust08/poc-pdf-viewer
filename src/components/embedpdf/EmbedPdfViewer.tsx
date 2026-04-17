@@ -1,11 +1,14 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Viewport } from '@embedpdf/plugin-viewport/react'
 import { Scroller, useScroll } from '@embedpdf/plugin-scroll/react'
 import { RenderLayer } from '@embedpdf/plugin-render/react'
 import { useZoom, ZoomGestureWrapper } from '@embedpdf/plugin-zoom/react'
 import { useDocumentManagerCapability } from '@embedpdf/plugin-document-manager/react'
-import { HARDCODED_MARKS } from '../../types/marks'
+import { HARDCODED_MARKS, PdfMark } from '../../types/marks'
+
+const CLICK_THRESHOLD_SQ = 25 // 5px movement threshold to distinguish click from drag
+const hardcodedIds = new Set(HARDCODED_MARKS.map((m) => m.id))
 
 interface Props {
   documentId: string
@@ -16,9 +19,22 @@ export default function EmbedPdfViewer({ documentId }: Props) {
   const { state: zoomState, provides: zoomScope } = useZoom(documentId)
   const { state: scrollState } = useScroll(documentId)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null)
+  const [userMarks, setUserMarks] = useState<PdfMark[]>([])
 
   const doc = docManager?.getDocument(documentId)
   const zoomPercent = Math.round((zoomState?.currentZoomLevel ?? 1) * 100)
+
+  function addMark(page: number, x: number, y: number) {
+    setUserMarks((prev) => {
+      const n = prev.length + 1
+      const id = `U${n}`
+      return [
+        ...prev,
+        { id, page, x: Math.round(x), y: Math.round(y), label: `${id} — (${Math.round(x)}, ${Math.round(y)})` },
+      ]
+    })
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -100,8 +116,24 @@ export default function EmbedPdfViewer({ documentId }: Props) {
           Upload PDF
         </button>
 
+        {userMarks.length > 0 && (
+          <>
+            <div style={{ width: 1, height: 24, background: '#2a4080' }} />
+            <span style={{ color: '#aaa', fontSize: '0.82rem' }}>
+              {userMarks.length} user mark{userMarks.length !== 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={() => setUserMarks([])}
+              style={{ ...btnStyle, background: '#6b1a1a' }}
+              title="Remove all user-placed marks"
+            >
+              Clear all
+            </button>
+          </>
+        )}
+
         <span style={{ color: '#555', fontSize: '0.8rem', flexShrink: 0 }}>
-          Ctrl+Scroll to zoom · Drag to pan
+          Click to place mark · Ctrl+Scroll to zoom · Drag to pan
         </span>
       </header>
 
@@ -113,10 +145,34 @@ export default function EmbedPdfViewer({ documentId }: Props) {
               documentId={documentId}
               renderPage={({ width, height, pageIndex, pageNumber }) => {
                 const pageSize = doc?.pages[pageIndex]?.size
-                const marksForPage = HARDCODED_MARKS.filter((m) => m.page === pageNumber)
+                const marksForPage = [
+                  ...HARDCODED_MARKS.filter((m) => m.page === pageNumber),
+                  ...userMarks.filter((m) => m.page === pageNumber),
+                ]
 
                 return (
-                  <div style={{ width, height, position: 'relative' }}>
+                  <div
+                    style={{ width, height, position: 'relative' }}
+                    onPointerDown={(e) => {
+                      pointerDownRef.current = { x: e.clientX, y: e.clientY }
+                    }}
+                    onClick={(e) => {
+                      if (!pageSize) return
+                      // Distinguish click from drag: ignore if pointer moved more than threshold
+                      if (pointerDownRef.current) {
+                        const dx = e.clientX - pointerDownRef.current.x
+                        const dy = e.clientY - pointerDownRef.current.y
+                        pointerDownRef.current = null
+                        if (dx * dx + dy * dy > CLICK_THRESHOLD_SQ) return
+                      }
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      const relX = e.clientX - rect.left
+                      const relY = e.clientY - rect.top
+                      const pdfX = relX * (pageSize.width / rect.width)
+                      const pdfY = pageSize.height - relY * (pageSize.height / rect.height)
+                      addMark(pageNumber, pdfX, pdfY)
+                    }}
+                  >
                     <RenderLayer
                       documentId={documentId}
                       pageIndex={pageIndex}
@@ -137,13 +193,14 @@ export default function EmbedPdfViewer({ documentId }: Props) {
                         {marksForPage.map((mark) => {
                           const cx = mark.x * (width / pageSize.width)
                           const cy = (pageSize.height - mark.y) * (height / pageSize.height)
+                          const isUser = !hardcodedIds.has(mark.id)
                           return (
                             <g key={mark.id}>
                               <circle
                                 cx={cx}
                                 cy={cy}
                                 r={10}
-                                fill="rgba(255,80,80,0.85)"
+                                fill={isUser ? 'rgba(80,180,255,0.9)' : 'rgba(255,80,80,0.85)'}
                                 stroke="white"
                                 strokeWidth={2}
                               />
