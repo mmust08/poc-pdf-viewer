@@ -28,6 +28,15 @@ const prototypes = [
     difficulty: 'Medium-High',
     notes: 'NOTES_PROTO3.md',
   },
+  {
+    path: '/prototype/embedpdf',
+    name: 'Prototype 4 — embedPdf (Headless)',
+    paradigm: 'PDFium-based headless library with plugin architecture',
+    description:
+      'embedPdf headless mode renders pages via PDFium WASM engine. Scroller handles continuous vertical layout with virtualization. Zoom and Pan plugins provide interactive controls. Marks are SVG circles overlaid per page in the renderPage callback.',
+    difficulty: 'Low-Medium',
+    notes: '',
+  },
 ]
 
 export default function LandingPage() {
@@ -82,6 +91,7 @@ export default function LandingPage() {
             ['PDF.js + RZPP', 'CSS transform (parent)', 'react-zoom-pan-pinch', 'Native React', 'Low'],
             ['Fabric.js', 'Viewport matrix (scene)', 'canvas.zoomToPoint()', 'useRef imperative', 'Medium'],
             ['Leaflet CRS.Simple', 'Leaflet recalculates', 'Map-native', 'react-leaflet', 'Medium-High'],
+            ['embedPdf Headless', 'SVG overlay per page', 'Zoom/Pan plugins', 'Native React hooks', 'Low-Medium'],
           ].map((row, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : '#16213e' }}>
               {row.map((cell, j) => (
