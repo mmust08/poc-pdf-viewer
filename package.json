@@ -9,6 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@embedpdf/core": "^2.14.0",
+    "@embedpdf/engines": "^2.14.0",
+    "@embedpdf/plugin-document-manager": "^2.14.0",
+    "@embedpdf/plugin-interaction-manager": "^2.14.0",
+    "@embedpdf/plugin-pan": "^2.14.0",
+    "@embedpdf/plugin-render": "^2.14.0",
+    "@embedpdf/plugin-scroll": "^2.14.0",
+    "@embedpdf/plugin-viewport": "^2.14.0",
+    "@embedpdf/plugin-zoom": "^2.14.0",
     "fabric": "^6.5.4",
     "leaflet": "^1.9.4",
     "pdfjs-dist": "^4.10.38",
