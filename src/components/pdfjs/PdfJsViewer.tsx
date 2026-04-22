@@ -9,6 +9,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker as string
 const ZOOM_FACTOR = 1.25
 const MIN_SCALE = 0.25
 const MAX_SCALE = 50 // 5 000 %
+const MAX_CANVAS_DIM = 16384 // max canvas pixels per axis (browser limit)
 const CLICK_THRESHOLD_SQ = 25
 const PAGE_GAP = 12
 
@@ -81,8 +82,8 @@ export default function PdfJsViewer() {
         for (let i = 1; i <= doc.numPages; i++) {
           const page = await doc.getPage(i)
           if (cancelled) return
-          const [x0, y0, x1, y1] = page.view
-          geometries.push({ widthPt: x1 - x0, heightPt: y1 - y0 })
+          const vp = page.getViewport({ scale: 1 })
+          geometries.push({ widthPt: vp.width, heightPt: vp.height })
         }
         if (cancelled) return
 
@@ -493,22 +494,43 @@ function PageCanvas({
         return
       }
 
-      // ── Dynamic margins ───────────────────────────────────────────
-      const viewportW = cRect.width
-      const viewportH = cRect.height
-      const marginH = Math.max(MARGIN_MIN_PX, viewportW * MARGIN_FRACTION)
-      const marginV = Math.max(MARGIN_MIN_PX, viewportH * MARGIN_FRACTION)
+      // ── Determine clip region ─────────────────────────────────────
+      // Render the full page when it fits within browser canvas limits
+      // so large-format pages (A3, A2, …) appear completely without
+      // partial-render artefacts.  Fall back to margin-based clipping
+      // at very high zoom levels where the full page would exceed the
+      // browser's maximum canvas size.
+      const dpr = window.devicePixelRatio || 1
+      const fullPageFits =
+        Math.round(canvasWidth * dpr) <= MAX_CANVAS_DIM &&
+        Math.round(canvasHeight * dpr) <= MAX_CANVAS_DIM
 
-      const renderLeft = Math.max(wRect.left, visLeft - marginH)
-      const renderTop = Math.max(wRect.top, visTop - marginV)
-      const renderRight = Math.min(wRect.right, visRight + marginH)
-      const renderBottom = Math.min(wRect.bottom, visBottom + marginV)
+      let clipLeft: number
+      let clipTop: number
+      let clipW: number
+      let clipH: number
 
-      // Convert to page-pixel coords
-      const clipLeft = Math.round(renderLeft - wRect.left)
-      const clipTop = Math.round(renderTop - wRect.top)
-      const clipW = Math.round(renderRight - renderLeft)
-      const clipH = Math.round(renderBottom - renderTop)
+      if (fullPageFits) {
+        clipLeft = 0
+        clipTop = 0
+        clipW = canvasWidth
+        clipH = canvasHeight
+      } else {
+        const viewportW = cRect.width
+        const viewportH = cRect.height
+        const marginH = Math.max(MARGIN_MIN_PX, viewportW * MARGIN_FRACTION)
+        const marginV = Math.max(MARGIN_MIN_PX, viewportH * MARGIN_FRACTION)
+
+        const renderLeft = Math.max(wRect.left, visLeft - marginH)
+        const renderTop = Math.max(wRect.top, visTop - marginV)
+        const renderRight = Math.min(wRect.right, visRight + marginH)
+        const renderBottom = Math.min(wRect.bottom, visBottom + marginV)
+
+        clipLeft = Math.round(renderLeft - wRect.left)
+        clipTop = Math.round(renderTop - wRect.top)
+        clipW = Math.round(renderRight - renderLeft)
+        clipH = Math.round(renderBottom - renderTop)
+      }
 
       if (clipW <= 0 || clipH <= 0) return
 
@@ -535,9 +557,6 @@ function PageCanvas({
         renderTaskRef.current.cancel()
         renderTaskRef.current = null
       }
-
-      // ── HiDPI: render at device pixel resolution ──────────────────
-      const dpr = window.devicePixelRatio || 1
 
       const offscreen = document.createElement('canvas')
       offscreen.width = Math.round(clipW * dpr)
