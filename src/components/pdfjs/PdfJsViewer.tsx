@@ -131,6 +131,7 @@ export default function PdfJsViewer() {
 
     function onWheel(e: WheelEvent) {
       if (!e.ctrlKey && !e.metaKey) return
+      if (!container) return
       e.preventDefault()
 
       const oldScale = wheelScaleRef.current
