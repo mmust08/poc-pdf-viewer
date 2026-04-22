@@ -46,6 +46,9 @@ export default function PdfJsViewer() {
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null)
   const scrollRafRef = useRef<number | null>(null)
   const pendingZoomRef = useRef<PendingZoom | null>(null)
+  const panRef = useRef<{ startX: number; startY: number; scrollLeft: number; scrollTop: number } | null>(null)
+
+  const [isPanning, setIsPanning] = useState(false)
 
   const [pdfUrl, setPdfUrl] = useState('/sample-blueprint.pdf')
   const [pdfName, setPdfName] = useState('sample-blueprint.pdf')
@@ -185,6 +188,34 @@ export default function PdfJsViewer() {
       scrollRafRef.current = null
       setScrollVersion((v) => v + 1)
     })
+  }
+
+  // ── Grab-to-pan ──────────────────────────────────────────────────────
+  function handlePanStart(e: React.MouseEvent<HTMLDivElement>) {
+    // Only pan with the primary (left) mouse button
+    if (e.button !== 0) return
+    const container = containerRef.current
+    if (!container) return
+    panRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      scrollLeft: container.scrollLeft,
+      scrollTop: container.scrollTop,
+    }
+    setIsPanning(true)
+  }
+
+  function handlePanMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!panRef.current) return
+    const container = containerRef.current
+    if (!container) return
+    container.scrollLeft = panRef.current.scrollLeft - (e.clientX - panRef.current.startX)
+    container.scrollTop = panRef.current.scrollTop - (e.clientY - panRef.current.startY)
+  }
+
+  function handlePanEnd() {
+    panRef.current = null
+    setIsPanning(false)
   }
 
   // ── Zoom handler (button zoom — centres on viewport) ─────────────────
@@ -334,7 +365,7 @@ export default function PdfJsViewer() {
         )}
 
         <span style={{ color: '#555', fontSize: '0.8rem', flexShrink: 0 }}>
-          Click to place mark · Scroll to navigate · Ctrl+wheel to zoom
+          Click to place mark · Drag to pan · Ctrl+wheel to zoom
         </span>
       </header>
 
@@ -342,7 +373,18 @@ export default function PdfJsViewer() {
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        style={{ flex: 1, overflow: 'auto', background: '#555', padding: '8px 0', position: 'relative' }}
+        onMouseDown={handlePanStart}
+        onMouseMove={handlePanMove}
+        onMouseUp={handlePanEnd}
+        onMouseLeave={handlePanEnd}
+        style={{
+          flex: 1,
+          overflow: 'auto',
+          background: '#555',
+          padding: '8px 0',
+          position: 'relative',
+          cursor: isPanning ? 'grabbing' : 'grab',
+        }}
       >
         {loading && (
           <div
