@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
@@ -11,9 +11,19 @@ const MIN_SCALE = 0.25
 const MAX_SCALE = 50 // 5 000 %
 const CLICK_THRESHOLD_SQ = 25
 const PAGE_GAP = 12
-// Pre-render this many pixels above and below the visible area so that
-// small scrolls reveal already-rendered content instead of a grey gap.
-const RENDER_MARGIN_PX = 400
+
+// Dynamic pre-render margin: fraction of viewport dimension, with a floor.
+const MARGIN_FRACTION = 0.75
+const MARGIN_MIN_PX = 800
+
+// Skip-render threshold: don't re-render if the viewport edge is still this
+// far inside the already-rendered region.
+const RERENDER_THRESHOLD_PX = 200
+
+// Page virtualisation: only mount PageCanvas for pages within this many
+// viewport-heights of the visible area.
+const VIRTUALIZATION_VIEWPORTS = 2
+
 const hardcodedIds = new Set(HARDCODED_MARKS.map((m) => m.id))
 
 interface PageGeometry {
@@ -21,12 +31,20 @@ interface PageGeometry {
   heightPt: number
 }
 
+interface PendingZoom {
+  pdfX: number
+  pdfY: number
+  newScale: number
+  anchorViewportX?: number // pointer offset for wheel zoom
+  anchorViewportY?: number
+}
+
 export default function PdfJsViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null)
-  // rAF handle used to debounce scroll-triggered re-renders to once per frame
   const scrollRafRef = useRef<number | null>(null)
+  const pendingZoomRef = useRef<PendingZoom | null>(null)
 
   const [pdfUrl, setPdfUrl] = useState('/sample-blueprint.pdf')
   const [pdfName, setPdfName] = useState('sample-blueprint.pdf')
@@ -37,14 +55,12 @@ export default function PdfJsViewer() {
   const [currentPage, setCurrentPage] = useState(1)
   const [userMarks, setUserMarks] = useState<PdfMark[]>([])
   const [loading, setLoading] = useState(true)
-  // Incremented (at most once per animation frame) to signal page canvases
-  // that the scroll position has changed and they should re-clip their render.
   const [scrollVersion, setScrollVersion] = useState(0)
 
   const pageCount = pageGeometries.length
   const zoomPercent = Math.round(scale * 100)
 
-  // Load PDF document and compute fit-to-width scale
+  // ── Load PDF document and compute fit-to-width scale ──────────────────
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -73,7 +89,6 @@ export default function PdfJsViewer() {
         setPdfDoc(doc)
         setPageGeometries(geometries)
 
-        // Fit first page to container width
         if (geometries.length > 0 && containerRef.current) {
           const containerWidth = containerRef.current.clientWidth - 32
           setScale(containerWidth / geometries[0].widthPt)
@@ -90,8 +105,63 @@ export default function PdfJsViewer() {
     }
   }, [pdfUrl])
 
+  // ── Apply scroll adjustment after zoom ────────────────────────────────
+  useEffect(() => {
+    const pending = pendingZoomRef.current
+    const container = containerRef.current
+    if (!pending || !container || pending.newScale !== scale) return
+    pendingZoomRef.current = null
+
+    const anchorX = pending.anchorViewportX ?? container.clientWidth / 2
+    const anchorY = pending.anchorViewportY ?? container.clientHeight / 2
+
+    container.scrollLeft = pending.pdfX * scale - anchorX
+    container.scrollTop = pending.pdfY * scale - anchorY
+  }, [scale])
+
+  // ── Ctrl+wheel / pinch zoom ──────────────────────────────────────────
+  // Scale is read via a ref so we attach the listener once (non-passive to
+  // preventDefault) without re-creating it on every scale change.
+  const wheelScaleRef = useRef(scale)
+  wheelScaleRef.current = scale
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    function onWheel(e: WheelEvent) {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+
+      const oldScale = wheelScaleRef.current
+      const newScale =
+        e.deltaY < 0
+          ? Math.min(MAX_SCALE, oldScale * ZOOM_FACTOR)
+          : Math.max(MIN_SCALE, oldScale / ZOOM_FACTOR)
+      if (newScale === oldScale) return
+
+      const rect = container.getBoundingClientRect()
+      const pointerViewportX = e.clientX - rect.left
+      const pointerViewportY = e.clientY - rect.top
+      const pdfX = (pointerViewportX + container.scrollLeft) / oldScale
+      const pdfY = (pointerViewportY + container.scrollTop) / oldScale
+
+      pendingZoomRef.current = {
+        pdfX,
+        pdfY,
+        newScale,
+        anchorViewportX: pointerViewportX,
+        anchorViewportY: pointerViewportY,
+      }
+      setScale(newScale)
+    }
+
+    container.addEventListener('wheel', onWheel, { passive: false })
+    return () => container.removeEventListener('wheel', onWheel)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
-    // Update the page-number indicator immediately (no debounce needed — cheap)
     if (pageGeometries.length > 0) {
       const scrollCenter = e.currentTarget.scrollTop + e.currentTarget.clientHeight / 3
       let cumHeight = 0
@@ -106,9 +176,6 @@ export default function PdfJsViewer() {
       setCurrentPage(page)
     }
 
-    // Batch canvas re-render requests to at most once per animation frame.
-    // This prevents dozens of state updates (and React re-renders) per scroll
-    // event burst while still keeping the render latency below one frame.
     if (scrollRafRef.current !== null) {
       cancelAnimationFrame(scrollRafRef.current)
     }
@@ -116,6 +183,25 @@ export default function PdfJsViewer() {
       scrollRafRef.current = null
       setScrollVersion((v) => v + 1)
     })
+  }
+
+  // ── Zoom handler (button zoom — centres on viewport) ─────────────────
+  function handleZoom(direction: 'in' | 'out') {
+    const container = containerRef.current
+    if (!container) return
+
+    const oldScale = scale
+    const newScale =
+      direction === 'in'
+        ? Math.min(MAX_SCALE, oldScale * ZOOM_FACTOR)
+        : Math.max(MIN_SCALE, oldScale / ZOOM_FACTOR)
+    if (newScale === oldScale) return
+
+    const pdfX = (container.scrollLeft + container.clientWidth / 2) / oldScale
+    const pdfY = (container.scrollTop + container.clientHeight / 2) / oldScale
+
+    pendingZoomRef.current = { pdfX, pdfY, newScale }
+    setScale(newScale)
   }
 
   function addMark(page: number, x: number, y: number) {
@@ -136,6 +222,41 @@ export default function PdfJsViewer() {
     setPdfName(file.name)
     e.target.value = ''
   }
+
+  // ── Page virtualisation — compute which pages to mount ────────────────
+  const getVisiblePageRange = useCallback((): [number, number] => {
+    const container = containerRef.current
+    if (!container || pageGeometries.length === 0) return [0, pageGeometries.length - 1]
+
+    const viewportH = container.clientHeight
+    const scrollTop = container.scrollTop
+    const bufferPx = viewportH * VIRTUALIZATION_VIEWPORTS
+
+    const viewTop = scrollTop - bufferPx
+    const viewBottom = scrollTop + viewportH + bufferPx
+
+    let firstVisible = 0
+    let lastVisible = pageGeometries.length - 1
+    let cumTop = 0
+
+    for (let i = 0; i < pageGeometries.length; i++) {
+      const pageH = pageGeometries[i].heightPt * scale + PAGE_GAP
+      const pageBottom = cumTop + pageH
+      if (pageBottom < viewTop) {
+        firstVisible = i + 1
+      }
+      if (cumTop > viewBottom) {
+        lastVisible = i - 1
+        break
+      }
+      cumTop = pageBottom
+    }
+
+    return [Math.max(0, firstVisible), Math.min(pageGeometries.length - 1, lastVisible)]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageGeometries, scale, scrollVersion])
+
+  const [visFirstPage, visLastPage] = getVisiblePageRange()
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -170,21 +291,13 @@ export default function PdfJsViewer() {
 
         {/* Zoom controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
-          <button
-            onClick={() => setScale((s) => Math.max(MIN_SCALE, s / ZOOM_FACTOR))}
-            style={btnStyle}
-            title="Zoom out"
-          >
+          <button onClick={() => handleZoom('out')} style={btnStyle} title="Zoom out">
             −
           </button>
           <span style={{ color: '#e0e0e0', fontSize: '0.85rem', minWidth: 45, textAlign: 'center' }}>
             {zoomPercent}%
           </span>
-          <button
-            onClick={() => setScale((s) => Math.min(MAX_SCALE, s * ZOOM_FACTOR))}
-            style={btnStyle}
-            title="Zoom in"
-          >
+          <button onClick={() => handleZoom('in')} style={btnStyle} title="Zoom in">
             +
           </button>
         </div>
@@ -219,7 +332,7 @@ export default function PdfJsViewer() {
         )}
 
         <span style={{ color: '#555', fontSize: '0.8rem', flexShrink: 0 }}>
-          Click to place mark · Scroll to navigate
+          Click to place mark · Scroll to navigate · Ctrl+wheel to zoom
         </span>
       </header>
 
@@ -245,24 +358,39 @@ export default function PdfJsViewer() {
         )}
 
         {pdfDoc &&
-          pageGeometries.map((geo, i) => (
-            <PageCanvas
-              key={`${pdfUrl}-p${i}`}
-              pdfDoc={pdfDoc}
-              pageNumber={i + 1}
-              scale={scale}
-              widthPt={geo.widthPt}
-              heightPt={geo.heightPt}
-              marks={[
-                ...HARDCODED_MARKS.filter((m) => m.page === i + 1),
-                ...userMarks.filter((m) => m.page === i + 1),
-              ]}
-              onMarkAdded={(x, y) => addMark(i + 1, x, y)}
-              pointerDownRef={pointerDownRef}
-              containerRef={containerRef}
-              scrollVersion={scrollVersion}
-            />
-          ))}
+          pageGeometries.map((geo, i) => {
+            if (i < visFirstPage || i > visLastPage) {
+              // Placeholder — correct height so scroll layout is stable
+              return (
+                <div
+                  key={`${pdfUrl}-p${i}`}
+                  style={{
+                    width: Math.round(geo.widthPt * scale),
+                    height: Math.round(geo.heightPt * scale),
+                    margin: `0 auto ${PAGE_GAP}px`,
+                  }}
+                />
+              )
+            }
+            return (
+              <PageCanvas
+                key={`${pdfUrl}-p${i}`}
+                pdfDoc={pdfDoc}
+                pageNumber={i + 1}
+                scale={scale}
+                widthPt={geo.widthPt}
+                heightPt={geo.heightPt}
+                marks={[
+                  ...HARDCODED_MARKS.filter((m) => m.page === i + 1),
+                  ...userMarks.filter((m) => m.page === i + 1),
+                ]}
+                onMarkAdded={(x, y) => addMark(i + 1, x, y)}
+                pointerDownRef={pointerDownRef}
+                containerRef={containerRef}
+                scrollVersion={scrollVersion}
+              />
+            )
+          })}
       </div>
     </div>
   )
@@ -276,15 +404,27 @@ export default function PdfJsViewer() {
 /*  1. The wrapper div is always sized to the full scaled page so the */
 /*     scrollable layout is correct.                                   */
 /*  2. The canvas covers only the visible region of the page plus a   */
-/*     RENDER_MARGIN_PX pre-render band above and below.  This keeps  */
-/*     canvas dimensions within browser limits at any zoom level and  */
-/*     means small scrolls reveal already-rendered content.           */
+/*     dynamic pre-render margin above/below and left/right.  This    */
+/*     keeps canvas dimensions within browser limits at any zoom      */
+/*     level and means small scrolls reveal already-rendered content. */
 /*  3. Double-buffering: PDF.js renders into an offscreen canvas.     */
 /*     Only when the render completes is the visible canvas atomically */
 /*     updated (resize + drawImage in the same JS task).  This means  */
 /*     the old frame stays visible during the entire render — no grey */
 /*     flash, no breaks between page slides.                          */
+/*  4. Skip-render: if the viewport is fully within the previously    */
+/*     rendered region (with threshold), no new render is triggered.  */
+/*  5. HiDPI: canvas bitmap is sized at devicePixelRatio resolution   */
+/*     but displayed at CSS pixel size for crisp lines and text.      */
 /* ------------------------------------------------------------------ */
+
+interface RenderedRegion {
+  clipLeft: number
+  clipTop: number
+  clipRight: number
+  clipBottom: number
+  scale: number
+}
 
 function PageCanvas({
   pdfDoc,
@@ -313,8 +453,14 @@ function PageCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  // Full scaled page dimensions — drive the wrapper size so the scroll
-  // container allocates the correct layout space for this page.
+  // Track the clip region currently painted on the visible canvas so we
+  // can skip re-renders when the viewport hasn't moved outside it.
+  const renderedRegionRef = useRef<RenderedRegion | null>(null)
+
+  // Active PDF.js RenderTask — cancel before starting a new one.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderTaskRef = useRef<any>(null)
+
   const canvasWidth = Math.round(widthPt * scale)
   const canvasHeight = Math.round(heightPt * scale)
 
@@ -330,32 +476,34 @@ function PageCanvas({
       const container = containerRef.current
       if (!canvas || !wrapper || !container) return
 
-      // Screen-space bounding rects
       const wRect = wrapper.getBoundingClientRect()
       const cRect = container.getBoundingClientRect()
 
-      // Strict visible intersection of this page and the scroll container
+      // Strict visible intersection
       const visLeft = Math.max(wRect.left, cRect.left)
       const visTop = Math.max(wRect.top, cRect.top)
       const visRight = Math.min(wRect.right, cRect.right)
       const visBottom = Math.min(wRect.bottom, cRect.bottom)
 
       if (visRight <= visLeft || visBottom <= visTop) {
-        // Page is entirely outside the viewport — clear the canvas
         canvas.width = 0
         canvas.height = 0
+        renderedRegionRef.current = null
         return
       }
 
-      // Expand the render region by RENDER_MARGIN_PX in the scroll direction
-      // (clamped to the page boundaries) so that modest scrolls are covered
-      // by already-rendered pixels rather than triggering a new render.
-      const renderLeft = Math.max(wRect.left, visLeft)   // no horizontal pre-render needed
-      const renderTop = Math.max(wRect.top, visTop - RENDER_MARGIN_PX)
-      const renderRight = Math.min(wRect.right, visRight)
-      const renderBottom = Math.min(wRect.bottom, visBottom + RENDER_MARGIN_PX)
+      // ── Dynamic margins ───────────────────────────────────────────
+      const viewportW = cRect.width
+      const viewportH = cRect.height
+      const marginH = Math.max(MARGIN_MIN_PX, viewportW * MARGIN_FRACTION)
+      const marginV = Math.max(MARGIN_MIN_PX, viewportH * MARGIN_FRACTION)
 
-      // Convert render region from screen coords to page-pixel coords
+      const renderLeft = Math.max(wRect.left, visLeft - marginH)
+      const renderTop = Math.max(wRect.top, visTop - marginV)
+      const renderRight = Math.min(wRect.right, visRight + marginH)
+      const renderBottom = Math.min(wRect.bottom, visBottom + marginV)
+
+      // Convert to page-pixel coords
       const clipLeft = Math.round(renderLeft - wRect.left)
       const clipTop = Math.round(renderTop - wRect.top)
       const clipW = Math.round(renderRight - renderLeft)
@@ -363,42 +511,83 @@ function PageCanvas({
 
       if (clipW <= 0 || clipH <= 0) return
 
-      // ── Double-buffer ─────────────────────────────────────────────────
-      // Render into an offscreen canvas so the visible canvas is not
-      // cleared until the render is complete.  The swap (resize + blit)
-      // happens synchronously inside one JS task, so the browser composites
-      // either the old frame or the new frame — never a blank frame.
+      // ── Skip-render check ─────────────────────────────────────────
+      const rr = renderedRegionRef.current
+      if (rr && rr.scale === scale) {
+        const vL = Math.round(visLeft - wRect.left)
+        const vT = Math.round(visTop - wRect.top)
+        const vR = Math.round(visRight - wRect.left)
+        const vB = Math.round(visBottom - wRect.top)
+
+        if (
+          vL >= rr.clipLeft + RERENDER_THRESHOLD_PX &&
+          vT >= rr.clipTop + RERENDER_THRESHOLD_PX &&
+          vR <= rr.clipRight - RERENDER_THRESHOLD_PX &&
+          vB <= rr.clipBottom - RERENDER_THRESHOLD_PX
+        ) {
+          return // viewport is well within the already-rendered region
+        }
+      }
+
+      // ── Cancel stale render ───────────────────────────────────────
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel()
+        renderTaskRef.current = null
+      }
+
+      // ── HiDPI: render at device pixel resolution ──────────────────
+      const dpr = window.devicePixelRatio || 1
+
       const offscreen = document.createElement('canvas')
-      offscreen.width = clipW
-      offscreen.height = clipH
+      offscreen.width = Math.round(clipW * dpr)
+      offscreen.height = Math.round(clipH * dpr)
       const offCtx = offscreen.getContext('2d')
       if (!offCtx) return
 
-      // offsetX/offsetY shift the PDF coordinate origin so that the
-      // sub-region starting at (clipLeft, clipTop) maps to canvas (0, 0).
-      // The render is at exact pixel resolution — no CSS upscaling → no blur.
-      const viewport = page.getViewport({ scale, offsetX: -clipLeft, offsetY: -clipTop })
+      const viewport = page.getViewport({
+        scale: scale * dpr,
+        offsetX: -clipLeft * dpr,
+        offsetY: -clipTop * dpr,
+      })
+
+      const renderTask = page.render({ canvasContext: offCtx, viewport })
+      renderTaskRef.current = renderTask
 
       try {
-        await page.render({ canvasContext: offCtx, viewport }).promise
+        await renderTask.promise
       } catch {
-        return
+        return // RenderingCancelledException or other error
       }
 
+      renderTaskRef.current = null
       if (cancelled) return
 
-      // Atomically swap visible canvas content
-      canvas.width = clipW
-      canvas.height = clipH
+      // ── Atomic swap ───────────────────────────────────────────────
+      canvas.width = Math.round(clipW * dpr)
+      canvas.height = Math.round(clipH * dpr)
+      canvas.style.width = `${clipW}px`
+      canvas.style.height = `${clipH}px`
       canvas.style.left = `${clipLeft}px`
       canvas.style.top = `${clipTop}px`
       const visCtx = canvas.getContext('2d')
       if (!visCtx) return
       visCtx.drawImage(offscreen, 0, 0)
+
+      renderedRegionRef.current = {
+        clipLeft,
+        clipTop,
+        clipRight: clipLeft + clipW,
+        clipBottom: clipTop + clipH,
+        scale,
+      }
     })
 
     return () => {
       cancelled = true
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel()
+        renderTaskRef.current = null
+      }
     }
   }, [pdfDoc, pageNumber, scale, scrollVersion, containerRef])
 
@@ -409,8 +598,6 @@ function PageCanvas({
       pointerDownRef.current = null
       if (dx * dx + dy * dy > CLICK_THRESHOLD_SQ) return
     }
-    // Use the full wrapper rect for coordinate conversion so the maths is
-    // independent of which sub-region the canvas currently covers.
     const rect = e.currentTarget.getBoundingClientRect()
     const pdfX = (e.clientX - rect.left) * (widthPt / rect.width)
     const pdfY = heightPt - (e.clientY - rect.top) * (heightPt / rect.height)
@@ -418,9 +605,6 @@ function PageCanvas({
   }
 
   return (
-    // Wrapper reserves the full scaled page in the scroll layout.
-    // White background: if the canvas momentarily under-covers during
-    // a zoom change the gap looks like paper, not a grey artefact.
     <div
       ref={wrapperRef}
       style={{
@@ -437,9 +621,6 @@ function PageCanvas({
     >
       <canvas ref={canvasRef} style={{ position: 'absolute' }} />
 
-      {/* SVG marks overlay — always full page size.
-          SVG has no canvas-size limits and allocates no per-pixel memory,
-          so it is safe at any zoom level. */}
       {marks.length > 0 && (
         <svg
           width={canvasWidth}
