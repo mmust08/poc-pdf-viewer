@@ -25,6 +25,8 @@ const RERENDER_THRESHOLD_PX = 200
 // viewport-heights of the visible area.
 const VIRTUALIZATION_VIEWPORTS = 2
 
+const MARKS_STORAGE_PREFIX = 'pdfmarks:'
+
 const hardcodedIds = new Set(HARDCODED_MARKS.map((m) => m.id))
 
 interface PageGeometry {
@@ -69,7 +71,6 @@ export default function PdfJsViewer() {
     let cancelled = false
     setLoading(true)
     setCurrentPage(1)
-    setUserMarks([])
     setPdfDoc(null)
     setPageGeometries([])
 
@@ -97,6 +98,15 @@ export default function PdfJsViewer() {
           const containerWidth = containerRef.current.clientWidth - 32
           setScale(containerWidth / geometries[0].widthPt)
         }
+
+        // Restore persisted marks for this filename
+        try {
+          const stored = localStorage.getItem(MARKS_STORAGE_PREFIX + pdfName)
+          setUserMarks(stored ? JSON.parse(stored) : [])
+        } catch {
+          setUserMarks([])
+        }
+
         setLoading(false)
       })
       .catch(() => {
@@ -107,7 +117,19 @@ export default function PdfJsViewer() {
       cancelled = true
       loadingTask.destroy()
     }
-  }, [pdfUrl])
+  }, [pdfUrl, pdfName])
+
+  // ── Persist user marks to localStorage per filename ──────────────────
+  useEffect(() => {
+    if (loading) return
+    try {
+      if (userMarks.length > 0) {
+        localStorage.setItem(MARKS_STORAGE_PREFIX + pdfName, JSON.stringify(userMarks))
+      } else {
+        localStorage.removeItem(MARKS_STORAGE_PREFIX + pdfName)
+      }
+    } catch { /* storage full or unavailable — silently ignore */ }
+  }, [userMarks, pdfName, loading])
 
   // ── Apply scroll adjustment after zoom ────────────────────────────────
   useEffect(() => {
@@ -243,7 +265,7 @@ export default function PdfJsViewer() {
       const id = `U${n}`
       return [
         ...prev,
-        { id, page, x: Math.round(x), y: Math.round(y), label: `${id} — (${Math.round(x)}, ${Math.round(y)})` },
+        { id, page, x, y, label: `${id} — (${Math.round(x)}, ${Math.round(y)})` },
       ]
     })
   }
@@ -251,6 +273,18 @@ export default function PdfJsViewer() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Persist current marks under the OLD filename before switching
+    try {
+      if (userMarks.length > 0) {
+        localStorage.setItem(MARKS_STORAGE_PREFIX + pdfName, JSON.stringify(userMarks))
+      }
+    } catch { /* ignore */ }
+
+    // Gate the save effect so stale marks aren't written under the new name
+    setLoading(true)
+    setUserMarks([])
+
     setPdfUrl(URL.createObjectURL(file))
     setPdfName(file.name)
     e.target.value = ''
@@ -425,7 +459,9 @@ export default function PdfJsViewer() {
                 widthPt={geo.widthPt}
                 heightPt={geo.heightPt}
                 marks={[
-                  ...HARDCODED_MARKS.filter((m) => m.page === i + 1),
+                  ...(pdfName === 'sample-blueprint.pdf'
+                    ? HARDCODED_MARKS.filter((m) => m.page === i + 1)
+                    : []),
                   ...userMarks.filter((m) => m.page === i + 1),
                 ]}
                 onMarkAdded={(x, y) => addMark(i + 1, x, y)}
@@ -661,8 +697,8 @@ function PageCanvas({
       if (dx * dx + dy * dy > CLICK_THRESHOLD_SQ) return
     }
     const rect = e.currentTarget.getBoundingClientRect()
-    const pdfX = (e.clientX - rect.left) * (widthPt / rect.width)
-    const pdfY = heightPt - (e.clientY - rect.top) * (heightPt / rect.height)
+    const pdfX = (e.clientX - rect.left) / scale
+    const pdfY = heightPt - (e.clientY - rect.top) / scale
     onMarkAdded(pdfX, pdfY)
   }
 
@@ -690,8 +726,8 @@ function PageCanvas({
           style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
         >
           {marks.map((mark) => {
-            const cx = mark.x * (canvasWidth / widthPt)
-            const cy = (heightPt - mark.y) * (canvasHeight / heightPt)
+            const cx = mark.x * scale
+            const cy = (heightPt - mark.y) * scale
             const isUser = !hardcodedIds.has(mark.id)
             return (
               <g key={mark.id}>
