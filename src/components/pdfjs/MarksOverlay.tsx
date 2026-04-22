@@ -1,103 +1,86 @@
+import { useRef } from 'react'
 import { PdfMark, HARDCODED_MARKS } from '../../types/marks'
 
-interface Props {
+const CLICK_THRESHOLD_SQ = 25
+const hardcodedIds = new Set(HARDCODED_MARKS.map((m) => m.id))
+
+interface MarkOverlayProps {
   marks: PdfMark[]
-  pageWidthPt: number
-  pageHeightPt: number
-  canvasWidthPx: number
-  canvasHeightPx: number
-  isAdding: boolean
+  scale: number
+  heightPt: number
+  canvasWidth: number
+  canvasHeight: number
   onMarkAdded: (x: number, y: number) => void
 }
 
-function markToScreen(
-  mark: PdfMark,
-  pageWidthPt: number,
-  pageHeightPt: number,
-  canvasWidthPx: number,
-  canvasHeightPx: number,
-) {
-  const scaleX = canvasWidthPx / pageWidthPt
-  const scaleY = canvasHeightPx / pageHeightPt
-  return {
-    cx: Math.round(mark.x * scaleX),
-    cy: Math.round((pageHeightPt - mark.y) * scaleY),
-  }
-}
-
-const hardcodedIds = new Set(HARDCODED_MARKS.map((m) => m.id))
-
 export default function MarksOverlay({
   marks,
-  pageWidthPt,
-  pageHeightPt,
-  canvasWidthPx,
-  canvasHeightPx,
-  isAdding,
+  scale,
+  heightPt,
+  canvasWidth,
+  canvasHeight,
   onMarkAdded,
-}: Props) {
-  if (!pageWidthPt || !canvasWidthPx) return null
+}: MarkOverlayProps) {
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null)
 
-  function handleClick(e: React.MouseEvent<SVGSVGElement>) {
-    if (!isAdding) return
-    // getBoundingClientRect() gives the visually-scaled rect.
-    // Dividing by it normalises back to SVG user-unit (canvas-pixel) space.
+  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (pointerDownRef.current) {
+      const dx = e.clientX - pointerDownRef.current.x
+      const dy = e.clientY - pointerDownRef.current.y
+      pointerDownRef.current = null
+      if (dx * dx + dy * dy > CLICK_THRESHOLD_SQ) return
+    }
     const rect = e.currentTarget.getBoundingClientRect()
-    const svgX = (e.clientX - rect.left) * (canvasWidthPx / rect.width)
-    const svgY = (e.clientY - rect.top) * (canvasHeightPx / rect.height)
-    const pdfX = svgX * (pageWidthPt / canvasWidthPx)
-    const pdfY = pageHeightPt - svgY * (pageHeightPt / canvasHeightPx)
+    const pdfX = (e.clientX - rect.left) / scale
+    const pdfY = heightPt - (e.clientY - rect.top) / scale
     onMarkAdded(pdfX, pdfY)
   }
 
   return (
-    <svg
-      width={canvasWidthPx}
-      height={canvasHeightPx}
-      onClick={handleClick}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        overflow: 'visible',
-        // Enable pointer events only when adding so normal pan/zoom isn't blocked
-        pointerEvents: isAdding ? 'all' : 'none',
-        cursor: isAdding ? 'crosshair' : 'inherit',
+    <div
+      style={{ position: 'absolute', inset: 0 }}
+      onPointerDown={(e) => {
+        pointerDownRef.current = { x: e.clientX, y: e.clientY }
       }}
+      onClick={handleClick}
     >
-      {/* Invisible full-size hit area when adding */}
-      {isAdding && (
-        <rect x={0} y={0} width={canvasWidthPx} height={canvasHeightPx} fill="rgba(100,200,255,0.08)" />
+      {marks.length > 0 && (
+        <svg
+          width={canvasWidth}
+          height={canvasHeight}
+          style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
+        >
+          {marks.map((mark) => {
+            const cx = mark.x * scale
+            const cy = (heightPt - mark.y) * scale
+            const isUser = !hardcodedIds.has(mark.id)
+            return (
+              <g key={mark.id}>
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={10}
+                  fill={isUser ? 'rgba(80,180,255,0.9)' : 'rgba(255,80,80,0.85)'}
+                  stroke="white"
+                  strokeWidth={2}
+                />
+                <text
+                  x={cx + 14}
+                  y={cy + 5}
+                  fill="white"
+                  fontSize={12}
+                  fontWeight="bold"
+                  paintOrder="stroke"
+                  stroke="black"
+                  strokeWidth={3}
+                >
+                  {mark.label}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
       )}
-
-      {marks.map((mark) => {
-        const { cx, cy } = markToScreen(mark, pageWidthPt, pageHeightPt, canvasWidthPx, canvasHeightPx)
-        const isUser = !hardcodedIds.has(mark.id)
-        return (
-          <g key={mark.id}>
-            <circle
-              cx={cx}
-              cy={cy}
-              r={10}
-              fill={isUser ? 'rgba(80,180,255,0.9)' : 'rgba(255,80,80,0.85)'}
-              stroke="white"
-              strokeWidth={2}
-            />
-            <text
-              x={cx + 14}
-              y={cy + 5}
-              fill="white"
-              fontSize={12}
-              fontWeight="bold"
-              paintOrder="stroke"
-              stroke="black"
-              strokeWidth={3}
-            >
-              {mark.label}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
+    </div>
   )
 }

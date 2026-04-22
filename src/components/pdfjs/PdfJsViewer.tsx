@@ -2,7 +2,8 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
-import { PdfMark, HARDCODED_MARKS } from '../../types/marks'
+import { useMarks } from './useMarks'
+import MarksOverlay from './MarksOverlay'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker as string
 
@@ -10,7 +11,6 @@ const ZOOM_FACTOR = 1.25
 const MIN_SCALE = 0.25
 const MAX_SCALE = 50 // 5 000 %
 const MAX_CANVAS_DIM = 16384 // max canvas pixels per axis (browser limit)
-const CLICK_THRESHOLD_SQ = 25
 const PAGE_GAP = 12
 
 // Dynamic pre-render margin: fraction of viewport dimension, with a floor.
@@ -24,10 +24,6 @@ const RERENDER_THRESHOLD_PX = 200
 // Page virtualisation: only mount PageCanvas for pages within this many
 // viewport-heights of the visible area.
 const VIRTUALIZATION_VIEWPORTS = 2
-
-const MARKS_STORAGE_PREFIX = 'pdfmarks:'
-
-const hardcodedIds = new Set(HARDCODED_MARKS.map((m) => m.id))
 
 interface PageGeometry {
   widthPt: number
@@ -45,7 +41,6 @@ interface PendingZoom {
 export default function PdfJsViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const pointerDownRef = useRef<{ x: number; y: number } | null>(null)
   const scrollRafRef = useRef<number | null>(null)
   const pendingZoomRef = useRef<PendingZoom | null>(null)
   const panRef = useRef<{ startX: number; startY: number; scrollLeft: number; scrollTop: number } | null>(null)
@@ -59,9 +54,11 @@ export default function PdfJsViewer() {
   const [pageGeometries, setPageGeometries] = useState<PageGeometry[]>([])
   const [scale, setScale] = useState(1)
   const [currentPage, setCurrentPage] = useState(1)
-  const [userMarks, setUserMarks] = useState<PdfMark[]>([])
   const [loading, setLoading] = useState(true)
   const [scrollVersion, setScrollVersion] = useState(0)
+
+  const { userMarks, addMark, clearMarks, restoreMarks, saveAndReset, getMarksForPage } =
+    useMarks(pdfName, loading)
 
   const pageCount = pageGeometries.length
   const zoomPercent = Math.round(scale * 100)
@@ -99,14 +96,7 @@ export default function PdfJsViewer() {
           setScale(containerWidth / geometries[0].widthPt)
         }
 
-        // Restore persisted marks for this filename
-        try {
-          const stored = localStorage.getItem(MARKS_STORAGE_PREFIX + pdfName)
-          setUserMarks(stored ? JSON.parse(stored) : [])
-        } catch {
-          setUserMarks([])
-        }
-
+        restoreMarks(pdfName)
         setLoading(false)
       })
       .catch(() => {
@@ -118,18 +108,6 @@ export default function PdfJsViewer() {
       loadingTask.destroy()
     }
   }, [pdfUrl, pdfName])
-
-  // ── Persist user marks to localStorage per filename ──────────────────
-  useEffect(() => {
-    if (loading) return
-    try {
-      if (userMarks.length > 0) {
-        localStorage.setItem(MARKS_STORAGE_PREFIX + pdfName, JSON.stringify(userMarks))
-      } else {
-        localStorage.removeItem(MARKS_STORAGE_PREFIX + pdfName)
-      }
-    } catch { /* storage full or unavailable — silently ignore */ }
-  }, [userMarks, pdfName, loading])
 
   // ── Apply scroll adjustment after zoom ────────────────────────────────
   useEffect(() => {
@@ -259,31 +237,12 @@ export default function PdfJsViewer() {
     setScale(newScale)
   }
 
-  function addMark(page: number, x: number, y: number) {
-    setUserMarks((prev) => {
-      const n = prev.length + 1
-      const id = `U${n}`
-      return [
-        ...prev,
-        { id, page, x, y, label: `${id} — (${Math.round(x)}, ${Math.round(y)})` },
-      ]
-    })
-  }
-
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Persist current marks under the OLD filename before switching
-    try {
-      if (userMarks.length > 0) {
-        localStorage.setItem(MARKS_STORAGE_PREFIX + pdfName, JSON.stringify(userMarks))
-      }
-    } catch { /* ignore */ }
-
-    // Gate the save effect so stale marks aren't written under the new name
+    saveAndReset()
     setLoading(true)
-    setUserMarks([])
 
     setPdfUrl(URL.createObjectURL(file))
     setPdfName(file.name)
@@ -389,7 +348,7 @@ export default function PdfJsViewer() {
               {userMarks.length} user mark{userMarks.length !== 1 ? 's' : ''}
             </span>
             <button
-              onClick={() => setUserMarks([])}
+              onClick={clearMarks}
               style={{ ...btnStyle, background: '#6b1a1a' }}
               title="Remove all user marks"
             >
@@ -458,17 +417,18 @@ export default function PdfJsViewer() {
                 scale={scale}
                 widthPt={geo.widthPt}
                 heightPt={geo.heightPt}
-                marks={[
-                  ...(pdfName === 'sample-blueprint.pdf'
-                    ? HARDCODED_MARKS.filter((m) => m.page === i + 1)
-                    : []),
-                  ...userMarks.filter((m) => m.page === i + 1),
-                ]}
-                onMarkAdded={(x, y) => addMark(i + 1, x, y)}
-                pointerDownRef={pointerDownRef}
                 containerRef={containerRef}
                 scrollVersion={scrollVersion}
-              />
+              >
+                <MarksOverlay
+                  marks={getMarksForPage(i + 1)}
+                  scale={scale}
+                  heightPt={geo.heightPt}
+                  canvasWidth={Math.round(geo.widthPt * scale)}
+                  canvasHeight={Math.round(geo.heightPt * scale)}
+                  onMarkAdded={(x, y) => addMark(i + 1, x, y)}
+                />
+              </PageCanvas>
             )
           })}
       </div>
@@ -512,11 +472,9 @@ function PageCanvas({
   scale,
   widthPt,
   heightPt,
-  marks,
-  onMarkAdded,
-  pointerDownRef,
   containerRef,
   scrollVersion,
+  children,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pdfDoc: any
@@ -524,11 +482,9 @@ function PageCanvas({
   scale: number
   widthPt: number
   heightPt: number
-  marks: PdfMark[]
-  onMarkAdded: (x: number, y: number) => void
-  pointerDownRef: React.MutableRefObject<{ x: number; y: number } | null>
   containerRef: React.RefObject<HTMLDivElement>
   scrollVersion: number
+  children?: React.ReactNode
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -689,19 +645,6 @@ function PageCanvas({
     }
   }, [pdfDoc, pageNumber, scale, scrollVersion, containerRef])
 
-  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (pointerDownRef.current) {
-      const dx = e.clientX - pointerDownRef.current.x
-      const dy = e.clientY - pointerDownRef.current.y
-      pointerDownRef.current = null
-      if (dx * dx + dy * dy > CLICK_THRESHOLD_SQ) return
-    }
-    const rect = e.currentTarget.getBoundingClientRect()
-    const pdfX = (e.clientX - rect.left) / scale
-    const pdfY = heightPt - (e.clientY - rect.top) / scale
-    onMarkAdded(pdfX, pdfY)
-  }
-
   return (
     <div
       ref={wrapperRef}
@@ -712,50 +655,9 @@ function PageCanvas({
         margin: `0 auto ${PAGE_GAP}px`,
         background: '#fff',
       }}
-      onPointerDown={(e) => {
-        pointerDownRef.current = { x: e.clientX, y: e.clientY }
-      }}
-      onClick={handleClick}
     >
       <canvas ref={canvasRef} style={{ position: 'absolute' }} />
-
-      {marks.length > 0 && (
-        <svg
-          width={canvasWidth}
-          height={canvasHeight}
-          style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
-        >
-          {marks.map((mark) => {
-            const cx = mark.x * scale
-            const cy = (heightPt - mark.y) * scale
-            const isUser = !hardcodedIds.has(mark.id)
-            return (
-              <g key={mark.id}>
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={10}
-                  fill={isUser ? 'rgba(80,180,255,0.9)' : 'rgba(255,80,80,0.85)'}
-                  stroke="white"
-                  strokeWidth={2}
-                />
-                <text
-                  x={cx + 14}
-                  y={cy + 5}
-                  fill="white"
-                  fontSize={12}
-                  fontWeight="bold"
-                  paintOrder="stroke"
-                  stroke="black"
-                  strokeWidth={3}
-                >
-                  {mark.label}
-                </text>
-              </g>
-            )
-          })}
-        </svg>
-      )}
+      {children}
     </div>
   )
 }
