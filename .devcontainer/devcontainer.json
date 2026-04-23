@@ -1,0 +1,33 @@
+{
+  "name": "poc-pdf-viewer",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // Install npm dependencies (rebuilds native addons for Linux) on first container create
+  "postCreateCommand": "npm install",
+
+  // Start the Vite dev server bound to all interfaces so the port is reachable from the host
+  "postStartCommand": "npm run dev -- --host",
+
+  // Forward Vite's default port to the host
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "Vite dev server",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "remoteUser": "node",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  }
+}

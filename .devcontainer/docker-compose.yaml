@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Mount the repo root into /workspace
+      - ..:/workspace:cached
+      # Isolate node_modules so Linux-compiled native addons (canvas)
+      # are kept separate from the host Windows node_modules
+      - node_modules:/workspace/node_modules
+    ports:
+      - "5173:5173"
+    # Keep the container alive; devcontainer.json handles install + dev server
+    command: sleep infinity
+    working_dir: /workspace
+
+volumes:
+  node_modules:
