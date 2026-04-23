@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Read from .devcontainer/.env (docker-compose picks it up automatically).
+        # Falls back to "latest" if the variable is not set in .env.
+        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-latest}
     volumes:
       # Mount the repo root into /workspace
       - ..:/workspace:cached
