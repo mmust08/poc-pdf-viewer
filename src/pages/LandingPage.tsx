@@ -37,6 +37,15 @@ const prototypes = [
     difficulty: 'Low-Medium',
     notes: '',
   },
+  {
+    path: '/prototype/pdfium-raw',
+    name: 'Prototype 5 — PDFium Raw WASM',
+    paradigm: 'Native PDFium WASM engine with custom viewer built from scratch',
+    description:
+      'Direct PDFium WASM rendering via @hyzyla/pdfium — zero dependencies, Chromium-grade quality. Custom zoom/pan (25%-5000%), multi-page scroll with virtualization, adaptive-scale rendering with viewport clipping, double-buffered canvas, and click-to-add marks with localStorage persistence. Single WASM dependency, all viewer code built from scratch.',
+    difficulty: 'Medium',
+    notes: '',
+  },
 ]
 
 export default function LandingPage() {
@@ -92,6 +101,7 @@ export default function LandingPage() {
             ['Fabric.js', 'Viewport matrix (scene)', 'canvas.zoomToPoint()', 'useRef imperative', 'Medium'],
             ['Leaflet CRS.Simple', 'Leaflet recalculates', 'Map-native', 'react-leaflet', 'Medium-High'],
             ['embedPdf Headless', 'SVG overlay per page', 'Zoom/Pan plugins', 'Native React hooks', 'Low-Medium'],
+            ['PDFium Raw WASM', 'SVG overlay per page', 'Custom (25%-5000%)', 'Native React', 'Medium'],
           ].map((row, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : '#16213e' }}>
               {row.map((cell, j) => (

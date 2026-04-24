@@ -4,6 +4,7 @@ import PdfJsPrototype from './pages/PdfJsPrototype'
 import FabricPrototype from './pages/FabricPrototype'
 import LeafletPrototype from './pages/LeafletPrototype'
 import EmbedPdfPrototype from './pages/EmbedPdfPrototype'
+import PdfiumRawPrototype from './pages/PdfiumRawPrototype'
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/prototype/fabric" element={<FabricPrototype />} />
         <Route path="/prototype/leaflet" element={<LeafletPrototype />} />
         <Route path="/prototype/embedpdf" element={<EmbedPdfPrototype />} />
+        <Route path="/prototype/pdfium-raw" element={<PdfiumRawPrototype />} />
       </Routes>
     </BrowserRouter>
   )
