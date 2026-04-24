@@ -508,6 +508,10 @@ interface RenderedRegion {
   renderScale: number
 }
 
+// Debounce delay for PDFium re-render after zoom (ms).
+// During this window the old canvas is CSS-stretched for instant feedback.
+const ZOOM_RENDER_DEBOUNCE_MS = 150
+
 function PageCanvas({
   documentRef,
   pageIndex,
@@ -531,6 +535,7 @@ function PageCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const renderedRegionRef = useRef<RenderedRegion | null>(null)
+  const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Cache the PDFium-rendered full-page bitmap as an offscreen canvas
   // so panning at the same zoom doesn't re-render via PDFium.
@@ -547,12 +552,46 @@ function PageCanvas({
   useEffect(() => {
     let cancelled = false
 
+    // ── Immediate CSS stretch for smooth zoom feedback ───────────────
+    // When scale changes, instantly stretch the existing canvas content
+    // to match the new wrapper size.  The browser GPU-scales the bitmap
+    // so the zoom feels instantaneous while PDFium re-renders in the
+    // background after a debounce.
+    const canvas = canvasRef.current
+    const rr = renderedRegionRef.current
+    if (canvas && rr && rr.scale !== scale && canvas.width > 0) {
+      const ratio = scale / rr.scale
+      canvas.style.width = `${(rr.clipRight - rr.clipLeft) * ratio}px`
+      canvas.style.height = `${(rr.clipBottom - rr.clipTop) * ratio}px`
+      canvas.style.left = `${rr.clipLeft * ratio}px`
+      canvas.style.top = `${rr.clipTop * ratio}px`
+    }
+
+    // ── Debounce PDFium render on scale change ──────────────────────
+    // Scale changes debounce to avoid multiple expensive renders during
+    // rapid zoom.  Scroll-only changes render immediately.
+    if (renderTimerRef.current) {
+      clearTimeout(renderTimerRef.current)
+      renderTimerRef.current = null
+    }
+    const scaleChanged = !rr || rr.scale !== scale
+    const delay = scaleChanged ? ZOOM_RENDER_DEBOUNCE_MS : 0
+
+    if (delay > 0) {
+      renderTimerRef.current = setTimeout(() => {
+        renderTimerRef.current = null
+        if (!cancelled) render()
+      }, delay)
+    } else {
+      render()
+    }
+
     async function render() {
       const doc = documentRef.current
-      const canvas = canvasRef.current
+      const cvs = canvasRef.current
       const wrapper = wrapperRef.current
       const container = containerRef.current
-      if (!doc || !canvas || !wrapper || !container) return
+      if (!doc || !cvs || !wrapper || !container) return
 
       const wRect = wrapper.getBoundingClientRect()
       const cRect = container.getBoundingClientRect()
@@ -564,8 +603,8 @@ function PageCanvas({
       const visBottom = Math.min(wRect.bottom, cRect.bottom)
 
       if (visRight <= visLeft || visBottom <= visTop) {
-        canvas.width = 0
-        canvas.height = 0
+        cvs.width = 0
+        cvs.height = 0
         renderedRegionRef.current = null
         return
       }
@@ -611,18 +650,18 @@ function PageCanvas({
       if (clipW <= 0 || clipH <= 0) return
 
       // ── Skip-render check ─────────────────────────────────────────
-      const rr = renderedRegionRef.current
-      if (rr && rr.scale === scale && rr.renderScale === renderScale) {
+      const rrNow = renderedRegionRef.current
+      if (rrNow && rrNow.scale === scale && rrNow.renderScale === renderScale) {
         const vL = Math.round(visLeft - wRect.left)
         const vT = Math.round(visTop - wRect.top)
         const vR = Math.round(visRight - wRect.left)
         const vB = Math.round(visBottom - wRect.top)
 
         if (
-          vL >= rr.clipLeft + RERENDER_THRESHOLD_PX &&
-          vT >= rr.clipTop + RERENDER_THRESHOLD_PX &&
-          vR <= rr.clipRight - RERENDER_THRESHOLD_PX &&
-          vB <= rr.clipBottom - RERENDER_THRESHOLD_PX
+          vL >= rrNow.clipLeft + RERENDER_THRESHOLD_PX &&
+          vT >= rrNow.clipTop + RERENDER_THRESHOLD_PX &&
+          vR <= rrNow.clipRight - RERENDER_THRESHOLD_PX &&
+          vB <= rrNow.clipBottom - RERENDER_THRESHOLD_PX
         ) {
           return // viewport is well within the already-rendered region
         }
@@ -702,13 +741,13 @@ function PageCanvas({
       if (cancelled) return
 
       // ── Atomic swap ───────────────────────────────────────────────
-      canvas.width = offscreen.width
-      canvas.height = offscreen.height
-      canvas.style.width = `${clipW}px`
-      canvas.style.height = `${clipH}px`
-      canvas.style.left = `${clipLeft}px`
-      canvas.style.top = `${clipTop}px`
-      const visCtx = canvas.getContext('2d')
+      cvs.width = offscreen.width
+      cvs.height = offscreen.height
+      cvs.style.width = `${clipW}px`
+      cvs.style.height = `${clipH}px`
+      cvs.style.left = `${clipLeft}px`
+      cvs.style.top = `${clipTop}px`
+      const visCtx = cvs.getContext('2d')
       if (!visCtx) return
       visCtx.drawImage(offscreen, 0, 0)
 
@@ -722,8 +761,13 @@ function PageCanvas({
       }
     }
 
-    render()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      if (renderTimerRef.current) {
+        clearTimeout(renderTimerRef.current)
+        renderTimerRef.current = null
+      }
+    }
   }, [documentRef, pageIndex, scale, widthPt, heightPt, containerRef, scrollVersion, canvasWidth, canvasHeight])
 
   return (
