@@ -1,41 +1,21 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { PDFiumLibrary } from '@hyzyla/pdfium/browser/cdn'
 import { useMarks } from './useMarks'
 import MarksOverlay from './MarksOverlay'
 
 const ZOOM_FACTOR = 1.25
 const MIN_SCALE = 0.25
-const MAX_CANVAS_DIM = 16384 // browser canvas limit per axis
+const MAX_CANVAS_DIM = 16384
 const PAGE_GAP = 12
 
-// PDFium WASM runs in a 32-bit address space (max 2 GB).  The rendered
-// bitmap is width × height × 4 bytes, but PDFium also allocates large
-// internal buffers during rendering (font caches, compositing surfaces,
-// path stroke buffers).  On complex blueprints these can exceed 1 GB.
-// A 100 M-pixel bitmap (400 MB) leaves ~1.6 GB headroom for PDFium.
-const MAX_BITMAP_PIXELS = 100_000_000
-
-/** Compute the maximum zoom scale at which PDFium can render a full page
- *  without exceeding canvas or WASM memory limits. */
-function computeMaxScale(widthPt: number, heightPt: number, dpr: number): number {
-  const maxByDimW = MAX_CANVAS_DIM / (widthPt * dpr)
-  const maxByDimH = MAX_CANVAS_DIM / (heightPt * dpr)
-  const maxByMemory = Math.sqrt(MAX_BITMAP_PIXELS / (widthPt * heightPt)) / dpr
-  return Math.min(maxByDimW, maxByDimH, maxByMemory)
-}
-
-// Dynamic pre-render margin: fraction of viewport dimension, with a floor.
 const MARGIN_FRACTION = 0.75
 const MARGIN_MIN_PX = 800
-
-// Skip-render threshold: don't re-render if the viewport edge is still this
-// far inside the already-rendered region.
 const RERENDER_THRESHOLD_PX = 200
-
-// Page virtualisation: only mount PageCanvas for pages within this many
-// viewport-heights of the visible area.
 const VIRTUALIZATION_VIEWPORTS = 2
+
+// Debounce delay for re-render after zoom (ms).
+// During this window the old canvas is CSS-stretched for instant feedback.
+const ZOOM_RENDER_DEBOUNCE_MS = 150
 
 interface PageGeometry {
   widthPt: number
@@ -50,9 +30,11 @@ interface PendingZoom {
   anchorViewportY?: number
 }
 
-// @hyzyla/pdfium uses FPDF_REVERSE_BYTE_ORDER flag internally,
-// so render output is already RGBA despite the 'BGRA' colorSpace name.
-// No channel swap needed — data goes directly to ImageData.
+// ── Render request callback registry ────────────────────────────────────
+// The parent holds one worker.onmessage handler and dispatches renderDone
+// results to the correct PageCanvas via this callback map.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RenderCallback = (msg: any) => void
 
 export default function PdfiumRawViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -61,11 +43,12 @@ export default function PdfiumRawViewer() {
   const pendingZoomRef = useRef<PendingZoom | null>(null)
   const panRef = useRef<{ startX: number; startY: number; scrollLeft: number; scrollTop: number } | null>(null)
 
-  // PDFium engine refs (not state — avoid re-renders)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const libraryRef = useRef<any>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const documentRef = useRef<any>(null)
+  // Web Worker for off-thread PDFium rendering
+  const workerRef = useRef<Worker | null>(null)
+  const renderIdRef = useRef(0)
+  const renderCallbacksRef = useRef<Map<number, RenderCallback>>(new Map())
+  // Track pending file name so we can apply it after the worker loads
+  const pendingNameRef = useRef('sample-blueprint.pdf')
 
   const [isPanning, setIsPanning] = useState(false)
   const [pdfName, setPdfName] = useState('sample-blueprint.pdf')
@@ -75,8 +58,8 @@ export default function PdfiumRawViewer() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [scrollVersion, setScrollVersion] = useState(0)
-  const [docVersion, setDocVersion] = useState(0) // bumped when document changes
-  const [maxScale, setMaxScale] = useState(50) // dynamic per-page cap
+  const [docVersion, setDocVersion] = useState(0)
+  const [maxScale, setMaxScale] = useState(50)
 
   const { userMarks, addMark, clearMarks, restoreMarks, saveAndReset, getMarksForPage } =
     useMarks(pdfName, loading)
@@ -84,102 +67,84 @@ export default function PdfiumRawViewer() {
   const pageCount = pageGeometries.length
   const zoomPercent = Math.round(scale * 100)
 
-  // ── Initialise PDFium WASM engine ────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false
+  // ── Request a render from the worker ──────────────────────────────────
+  const requestRender = useCallback(
+    (pageIndex: number, renderScale: number, dpr: number, callback: RenderCallback): number => {
+      const id = ++renderIdRef.current
+      renderCallbacksRef.current.set(id, callback)
+      workerRef.current?.postMessage({ type: 'render', id, pageIndex, scale: renderScale, dpr })
+      return id
+    },
+    [],
+  )
 
-    async function init() {
-      try {
-        const lib = await PDFiumLibrary.init({ disableCDNWarning: true })
-        if (cancelled) { lib.destroy(); return }
-        libraryRef.current = lib
-        // Load default PDF
-        await loadPdfFromUrl('/sample-blueprint.pdf', 'sample-blueprint.pdf')
-      } catch (err) {
-        if (!cancelled) setError(`Failed to initialise PDFium: ${err}`)
+  // ── Initialise Web Worker + PDFium engine ─────────────────────────────
+  useEffect(() => {
+    const worker = new Worker(
+      new URL('./pdfium.worker.ts', import.meta.url),
+      { type: 'module' },
+    )
+    workerRef.current = worker
+
+    worker.onmessage = (e) => {
+      const msg = e.data
+
+      switch (msg.type) {
+        case 'ready':
+          // Engine initialised — load the default PDF
+          worker.postMessage({
+            type: 'loadUrl',
+            url: `${window.location.origin}/sample-blueprint.pdf`,
+            dpr: window.devicePixelRatio || 1,
+          })
+          break
+
+        case 'loaded': {
+          const geometries: PageGeometry[] = msg.geometries
+          const name = pendingNameRef.current
+
+          setPageGeometries(geometries)
+          setPdfName(name)
+          setMaxScale(msg.maxScale)
+
+          // Fit-to-width
+          if (geometries.length > 0 && containerRef.current) {
+            const containerWidth = containerRef.current.clientWidth - 32
+            setScale(containerWidth / geometries[0].widthPt)
+          }
+
+          restoreMarks(name)
+          setDocVersion((v) => v + 1)
+          setLoading(false)
+          break
+        }
+
+        case 'error':
+          setError(msg.message)
+          setLoading(false)
+          break
+
+        case 'renderDone': {
+          const cb = renderCallbacksRef.current.get(msg.id)
+          if (cb) {
+            renderCallbacksRef.current.delete(msg.id)
+            cb(msg)
+          }
+          break
+        }
       }
     }
 
-    init()
+    // Start WASM initialisation
+    worker.postMessage({ type: 'init' })
+
     return () => {
-      cancelled = true
-      if (documentRef.current) { documentRef.current.destroy(); documentRef.current = null }
-      if (libraryRef.current) { libraryRef.current.destroy(); libraryRef.current = null }
+      worker.terminate()
+      workerRef.current = null
+      renderCallbacksRef.current.clear()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // ── Load PDF from URL ────────────────────────────────────────────────
-  async function loadPdfFromUrl(url: string, name: string) {
-    const lib = libraryRef.current
-    if (!lib) return
-
-    setLoading(true)
-    setError(null)
-    setCurrentPage(1)
-    setPageGeometries([])
-
-    try {
-      const resp = await fetch(url)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const buf = await resp.arrayBuffer()
-      loadPdfFromBuffer(new Uint8Array(buf), name)
-    } catch (err) {
-      setError(`Failed to load PDF: ${err}`)
-      setLoading(false)
-    }
-  }
-
-  // ── Load PDF from ArrayBuffer ────────────────────────────────────────
-  async function loadPdfFromBuffer(data: Uint8Array, name: string) {
-    const lib = libraryRef.current
-    if (!lib) return
-
-    // Close previous document
-    if (documentRef.current) {
-      documentRef.current.destroy()
-      documentRef.current = null
-    }
-
-    try {
-      const doc = await lib.loadDocument(data)
-      documentRef.current = doc
-
-      const count = doc.getPageCount()
-      const geometries: PageGeometry[] = []
-      for (let i = 0; i < count; i++) {
-        const page = doc.getPage(i)
-        const size = page.getOriginalSize()
-        geometries.push({ widthPt: size.originalWidth, heightPt: size.originalHeight })
-      }
-
-      setPageGeometries(geometries)
-      setPdfName(name)
-
-      // Compute max safe zoom from the largest page in the document
-      const dpr = window.devicePixelRatio || 1
-      let worstMax = Infinity
-      for (const g of geometries) {
-        worstMax = Math.min(worstMax, computeMaxScale(g.widthPt, g.heightPt, dpr))
-      }
-      // Round down to a clean percentage and clamp to a reasonable floor
-      const safeMax = Math.max(1, Math.floor(worstMax * 100) / 100)
-      setMaxScale(safeMax)
-
-      // Fit-to-width
-      if (geometries.length > 0 && containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth - 32
-        setScale(containerWidth / geometries[0].widthPt)
-      }
-
-      restoreMarks(name)
-      setDocVersion((v) => v + 1)
-      setLoading(false)
-    } catch (err) {
-      setError(`Failed to parse PDF: ${err}`)
-      setLoading(false)
-    }
-  }
 
   // ── Apply scroll adjustment after zoom ────────────────────────────────
   useEffect(() => {
@@ -315,9 +280,14 @@ export default function PdfiumRawViewer() {
 
     saveAndReset()
     setLoading(true)
+    setPageGeometries([])
 
+    pendingNameRef.current = file.name
     const buf = await file.arrayBuffer()
-    loadPdfFromBuffer(new Uint8Array(buf), file.name)
+    workerRef.current?.postMessage(
+      { type: 'loadBuffer', buffer: buf, dpr: window.devicePixelRatio || 1 },
+      [buf], // transfer
+    )
     e.target.value = ''
   }
 
@@ -485,7 +455,7 @@ export default function PdfiumRawViewer() {
             return (
               <PageCanvas
                 key={`p${i}-${docVersion}`}
-                documentRef={documentRef}
+                requestRender={requestRender}
                 pageIndex={i}
                 scale={scale}
                 widthPt={geo.widthPt}
@@ -510,22 +480,13 @@ export default function PdfiumRawViewer() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Per-page canvas renderer                                           */
+/*  Per-page canvas renderer (off-thread via Web Worker)               */
 /*                                                                     */
-/*  Rendering strategy                                                 */
-/*  ──────────────────                                                 */
-/*  1. The wrapper div is always sized to the full scaled page so the */
-/*     scrollable layout is correct.                                   */
-/*  2. PDFium renders the full page at an adaptive scale (capped at   */
-/*     MAX_CANVAS_DIM). The rendered bitmap is cached as an offscreen */
-/*     canvas. Only the visible viewport region is drawn to the       */
-/*     display canvas via drawImage source rect.                       */
-/*  3. Double-buffering: PDFium renders into an offscreen canvas.      */
-/*     Only when complete is the visible canvas atomically updated.    */
-/*  4. Skip-render: if the viewport is fully within the previously    */
-/*     rendered region (with threshold), no new render is triggered.  */
-/*  5. HiDPI: canvas bitmap is sized at devicePixelRatio resolution   */
-/*     but displayed at CSS pixel size for crisp lines and text.      */
+/*  1. Wrapper div sized to full scaled page (scroll layout).          */
+/*  2. On zoom: instantly CSS-stretch old canvas (GPU, 0ms).           */
+/*  3. After debounce: post render request to worker.                  */
+/*  4. Worker renders in background — main thread stays at 60fps.      */
+/*  5. On renderDone: build ImageData, atomic swap to visible canvas.  */
 /* ------------------------------------------------------------------ */
 
 interface RenderedRegion {
@@ -537,12 +498,8 @@ interface RenderedRegion {
   renderScale: number
 }
 
-// Debounce delay for PDFium re-render after zoom (ms).
-// During this window the old canvas is CSS-stretched for instant feedback.
-const ZOOM_RENDER_DEBOUNCE_MS = 150
-
 function PageCanvas({
-  documentRef,
+  requestRender,
   pageIndex,
   scale,
   widthPt,
@@ -551,8 +508,7 @@ function PageCanvas({
   scrollVersion,
   children,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  documentRef: React.RefObject<any>
+  requestRender: (pageIndex: number, scale: number, dpr: number, cb: RenderCallback) => number
   pageIndex: number
   scale: number
   widthPt: number
@@ -565,14 +521,12 @@ function PageCanvas({
   const wrapperRef = useRef<HTMLDivElement>(null)
   const renderedRegionRef = useRef<RenderedRegion | null>(null)
   const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latestIdRef = useRef(0) // to discard stale worker responses
 
-  // Cache the PDFium-rendered full-page bitmap as an offscreen canvas
-  // so panning at the same zoom doesn't re-render via PDFium.
+  // Cache the rendered full-page bitmap as an offscreen canvas
   const offscreenCacheRef = useRef<{
     canvas: HTMLCanvasElement
     renderScale: number
-    pxW: number
-    pxH: number
   } | null>(null)
 
   const canvasWidth = Math.round(widthPt * scale)
@@ -582,10 +536,6 @@ function PageCanvas({
     let cancelled = false
 
     // ── Immediate CSS stretch for smooth zoom feedback ───────────────
-    // When scale changes, instantly stretch the existing canvas content
-    // to match the new wrapper size.  The browser GPU-scales the bitmap
-    // so the zoom feels instantaneous while PDFium re-renders in the
-    // background after a debounce.
     const canvas = canvasRef.current
     const rr = renderedRegionRef.current
     if (canvas && rr && rr.scale !== scale && canvas.width > 0) {
@@ -596,9 +546,7 @@ function PageCanvas({
       canvas.style.top = `${rr.clipTop * ratio}px`
     }
 
-    // ── Debounce PDFium render on scale change ──────────────────────
-    // Scale changes debounce to avoid multiple expensive renders during
-    // rapid zoom.  Scroll-only changes render immediately.
+    // ── Debounce on scale change, immediate on scroll ───────────────
     if (renderTimerRef.current) {
       clearTimeout(renderTimerRef.current)
       renderTimerRef.current = null
@@ -609,23 +557,21 @@ function PageCanvas({
     if (delay > 0) {
       renderTimerRef.current = setTimeout(() => {
         renderTimerRef.current = null
-        if (!cancelled) render()
+        if (!cancelled) startRender()
       }, delay)
     } else {
-      render()
+      startRender()
     }
 
-    async function render() {
-      const doc = documentRef.current
+    function startRender() {
       const cvs = canvasRef.current
       const wrapper = wrapperRef.current
       const container = containerRef.current
-      if (!doc || !cvs || !wrapper || !container) return
+      if (!cvs || !wrapper || !container) return
 
       const wRect = wrapper.getBoundingClientRect()
       const cRect = container.getBoundingClientRect()
 
-      // Strict visible intersection
       const visLeft = Math.max(wRect.left, cRect.left)
       const visTop = Math.max(wRect.top, cRect.top)
       const visRight = Math.min(wRect.right, cRect.right)
@@ -641,10 +587,11 @@ function PageCanvas({
       // ── Determine clip region ─────────────────────────────────────
       const dpr = window.devicePixelRatio || 1
 
-      // Max scale respecting both canvas-dimension and WASM-memory limits
-      const maxRenderScale = computeMaxScale(widthPt, heightPt, dpr)
-      const renderScale = Math.min(scale, maxRenderScale)
-      const fullPageFits = scale <= maxRenderScale
+      // Check if full page fits in canvas limits (the worker enforces
+      // the memory limit, we just need to decide clip vs full here).
+      const fullPagePxW = canvasWidth * dpr
+      const fullPagePxH = canvasHeight * dpr
+      const fullPageFits = fullPagePxW <= MAX_CANVAS_DIM && fullPagePxH <= MAX_CANVAS_DIM
 
       let clipLeft: number
       let clipTop: number
@@ -677,7 +624,7 @@ function PageCanvas({
 
       // ── Skip-render check ─────────────────────────────────────────
       const rrNow = renderedRegionRef.current
-      if (rrNow && rrNow.scale === scale && rrNow.renderScale === renderScale) {
+      if (rrNow && rrNow.scale === scale) {
         const vL = Math.round(visLeft - wRect.left)
         const vT = Math.round(visTop - wRect.top)
         const vR = Math.round(visRight - wRect.left)
@@ -689,102 +636,44 @@ function PageCanvas({
           vR <= rrNow.clipRight - RERENDER_THRESHOLD_PX &&
           vB <= rrNow.clipBottom - RERENDER_THRESHOLD_PX
         ) {
-          return // viewport is well within the already-rendered region
+          return
         }
       }
 
-      // ── Render with PDFium (or use cache) ─────────────────────────
+      // ── Check offscreen cache — skip worker call if same renderScale ─
       const cache = offscreenCacheRef.current
-      let offscreenFull: HTMLCanvasElement
-
-      if (cache && cache.renderScale === renderScale) {
-        // Reuse cached full-page render (same zoom level)
-        offscreenFull = cache.canvas
-      } else {
-        // Render the full page at renderScale via PDFium
-        const page = doc.getPage(pageIndex)
-        const result = await page.render({
-          scale: renderScale * dpr,
-          render: 'bitmap' as const,
-        })
-
-        if (cancelled) return
-
-        // Data is already RGBA (library uses REVERSE_BYTE_ORDER flag)
-        const imgData = new ImageData(
-          new Uint8ClampedArray(result.data.buffer, result.data.byteOffset, result.data.byteLength),
-          result.width,
-          result.height,
-        )
-
-        offscreenFull = document.createElement('canvas')
-        offscreenFull.width = result.width
-        offscreenFull.height = result.height
-        const offCtx = offscreenFull.getContext('2d')
-        if (!offCtx) return
-        offCtx.putImageData(imgData, 0, 0)
-
-        offscreenCacheRef.current = {
-          canvas: offscreenFull,
-          renderScale,
-          pxW: result.width,
-          pxH: result.height,
-        }
+      if (cache && cache.renderScale === scale) {
+        // Same scale cached — just blit the visible clip region
+        blitToCanvas(cvs, cache.canvas, clipLeft, clipTop, clipW, clipH, canvasWidth, canvasHeight, fullPageFits, scale, cache.renderScale, dpr)
+        renderedRegionRef.current = { clipLeft, clipTop, clipRight: clipLeft + clipW, clipBottom: clipTop + clipH, scale, renderScale: cache.renderScale }
+        return
       }
 
-      if (cancelled) return
+      // ── Post render request to worker ─────────────────────────────
+      const id = requestRender(pageIndex, scale, dpr, (msg) => {
+        if (cancelled || id !== latestIdRef.current) return // stale
+        if (msg.error) return
 
-      // ── Blit visible clip from full-page render to display canvas ──
-      const offscreen = document.createElement('canvas')
-
-      if (fullPageFits) {
-        // Full page fits — display it directly
-        offscreen.width = Math.round(canvasWidth * dpr)
-        offscreen.height = Math.round(canvasHeight * dpr)
-        const ctx = offscreen.getContext('2d')
+        // Build offscreen canvas from transferred pixel data
+        const rgba = new Uint8ClampedArray(msg.data)
+        const imgData = new ImageData(rgba, msg.width, msg.height)
+        const offFull = document.createElement('canvas')
+        offFull.width = msg.width
+        offFull.height = msg.height
+        const ctx = offFull.getContext('2d')
         if (!ctx) return
-        ctx.drawImage(offscreenFull, 0, 0, offscreen.width, offscreen.height)
-      } else {
-        // Viewport clipping — map clip region to source coordinates in the
-        // rendered bitmap, then draw with upscaling if needed
-        const scaleRatio = renderScale / scale // <1 when zoom > maxRenderScale
-        const srcX = clipLeft * scaleRatio * dpr
-        const srcY = clipTop * scaleRatio * dpr
-        const srcW = clipW * scaleRatio * dpr
-        const srcH = clipH * scaleRatio * dpr
+        ctx.putImageData(imgData, 0, 0)
 
-        offscreen.width = Math.round(clipW * dpr)
-        offscreen.height = Math.round(clipH * dpr)
-        const ctx = offscreen.getContext('2d')
-        if (!ctx) return
-        ctx.drawImage(
-          offscreenFull,
-          srcX, srcY, srcW, srcH,
-          0, 0, offscreen.width, offscreen.height,
-        )
-      }
+        offscreenCacheRef.current = { canvas: offFull, renderScale: msg.renderScale }
 
-      if (cancelled) return
+        // Blit to visible canvas
+        const cvs2 = canvasRef.current
+        if (!cvs2) return
+        blitToCanvas(cvs2, offFull, clipLeft, clipTop, clipW, clipH, canvasWidth, canvasHeight, fullPageFits, scale, msg.renderScale, dpr)
 
-      // ── Atomic swap ───────────────────────────────────────────────
-      cvs.width = offscreen.width
-      cvs.height = offscreen.height
-      cvs.style.width = `${clipW}px`
-      cvs.style.height = `${clipH}px`
-      cvs.style.left = `${clipLeft}px`
-      cvs.style.top = `${clipTop}px`
-      const visCtx = cvs.getContext('2d')
-      if (!visCtx) return
-      visCtx.drawImage(offscreen, 0, 0)
-
-      renderedRegionRef.current = {
-        clipLeft,
-        clipTop,
-        clipRight: clipLeft + clipW,
-        clipBottom: clipTop + clipH,
-        scale,
-        renderScale,
-      }
+        renderedRegionRef.current = { clipLeft, clipTop, clipRight: clipLeft + clipW, clipBottom: clipTop + clipH, scale, renderScale: msg.renderScale }
+      })
+      latestIdRef.current = id
     }
 
     return () => {
@@ -794,7 +683,7 @@ function PageCanvas({
         renderTimerRef.current = null
       }
     }
-  }, [documentRef, pageIndex, scale, widthPt, heightPt, containerRef, scrollVersion, canvasWidth, canvasHeight])
+  }, [requestRender, pageIndex, scale, widthPt, heightPt, containerRef, scrollVersion, canvasWidth, canvasHeight])
 
   return (
     <div
@@ -811,6 +700,55 @@ function PageCanvas({
       {children}
     </div>
   )
+}
+
+/** Blit a region from the full-page offscreen canvas to the visible canvas. */
+function blitToCanvas(
+  cvs: HTMLCanvasElement,
+  offFull: HTMLCanvasElement,
+  clipLeft: number,
+  clipTop: number,
+  clipW: number,
+  clipH: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  fullPageFits: boolean,
+  scale: number,
+  renderScale: number,
+  dpr: number,
+) {
+  const offscreen = document.createElement('canvas')
+
+  if (fullPageFits) {
+    offscreen.width = Math.round(canvasWidth * dpr)
+    offscreen.height = Math.round(canvasHeight * dpr)
+    const ctx = offscreen.getContext('2d')
+    if (!ctx) return
+    ctx.drawImage(offFull, 0, 0, offscreen.width, offscreen.height)
+  } else {
+    const scaleRatio = renderScale / scale
+    const srcX = clipLeft * scaleRatio * dpr
+    const srcY = clipTop * scaleRatio * dpr
+    const srcW = clipW * scaleRatio * dpr
+    const srcH = clipH * scaleRatio * dpr
+
+    offscreen.width = Math.round(clipW * dpr)
+    offscreen.height = Math.round(clipH * dpr)
+    const ctx = offscreen.getContext('2d')
+    if (!ctx) return
+    ctx.drawImage(offFull, srcX, srcY, srcW, srcH, 0, 0, offscreen.width, offscreen.height)
+  }
+
+  // Atomic swap
+  cvs.width = offscreen.width
+  cvs.height = offscreen.height
+  cvs.style.width = `${clipW}px`
+  cvs.style.height = `${clipH}px`
+  cvs.style.left = `${clipLeft}px`
+  cvs.style.top = `${clipTop}px`
+  const visCtx = cvs.getContext('2d')
+  if (!visCtx) return
+  visCtx.drawImage(offscreen, 0, 0)
 }
 
 const btnStyle: React.CSSProperties = {
