@@ -6,9 +6,24 @@ import MarksOverlay from './MarksOverlay'
 
 const ZOOM_FACTOR = 1.25
 const MIN_SCALE = 0.25
-const MAX_SCALE = 50 // 5 000 %
 const MAX_CANVAS_DIM = 16384 // browser canvas limit per axis
 const PAGE_GAP = 12
+
+// PDFium WASM runs in a 32-bit address space (max 2 GB).  The rendered
+// bitmap is width × height × 4 bytes, but PDFium also allocates large
+// internal buffers during rendering (font caches, compositing surfaces,
+// path stroke buffers).  On complex blueprints these can exceed 1 GB.
+// A 100 M-pixel bitmap (400 MB) leaves ~1.6 GB headroom for PDFium.
+const MAX_BITMAP_PIXELS = 100_000_000
+
+/** Compute the maximum zoom scale at which PDFium can render a full page
+ *  without exceeding canvas or WASM memory limits. */
+function computeMaxScale(widthPt: number, heightPt: number, dpr: number): number {
+  const maxByDimW = MAX_CANVAS_DIM / (widthPt * dpr)
+  const maxByDimH = MAX_CANVAS_DIM / (heightPt * dpr)
+  const maxByMemory = Math.sqrt(MAX_BITMAP_PIXELS / (widthPt * heightPt)) / dpr
+  return Math.min(maxByDimW, maxByDimH, maxByMemory)
+}
 
 // Dynamic pre-render margin: fraction of viewport dimension, with a floor.
 const MARGIN_FRACTION = 0.75
@@ -61,6 +76,7 @@ export default function PdfiumRawViewer() {
   const [error, setError] = useState<string | null>(null)
   const [scrollVersion, setScrollVersion] = useState(0)
   const [docVersion, setDocVersion] = useState(0) // bumped when document changes
+  const [maxScale, setMaxScale] = useState(50) // dynamic per-page cap
 
   const { userMarks, addMark, clearMarks, restoreMarks, saveAndReset, getMarksForPage } =
     useMarks(pdfName, loading)
@@ -140,6 +156,16 @@ export default function PdfiumRawViewer() {
       setPageGeometries(geometries)
       setPdfName(name)
 
+      // Compute max safe zoom from the largest page in the document
+      const dpr = window.devicePixelRatio || 1
+      let worstMax = Infinity
+      for (const g of geometries) {
+        worstMax = Math.min(worstMax, computeMaxScale(g.widthPt, g.heightPt, dpr))
+      }
+      // Round down to a clean percentage and clamp to a reasonable floor
+      const safeMax = Math.max(1, Math.floor(worstMax * 100) / 100)
+      setMaxScale(safeMax)
+
       // Fit-to-width
       if (geometries.length > 0 && containerRef.current) {
         const containerWidth = containerRef.current.clientWidth - 32
@@ -172,6 +198,8 @@ export default function PdfiumRawViewer() {
   // ── Ctrl+wheel / pinch zoom ──────────────────────────────────────────
   const wheelScaleRef = useRef(scale)
   wheelScaleRef.current = scale
+  const wheelMaxScaleRef = useRef(maxScale)
+  wheelMaxScaleRef.current = maxScale
 
   useEffect(() => {
     const container = containerRef.current
@@ -183,9 +211,10 @@ export default function PdfiumRawViewer() {
       e.preventDefault()
 
       const oldScale = wheelScaleRef.current
+      const cap = wheelMaxScaleRef.current
       const newScale =
         e.deltaY < 0
-          ? Math.min(MAX_SCALE, oldScale * ZOOM_FACTOR)
+          ? Math.min(cap, oldScale * ZOOM_FACTOR)
           : Math.max(MIN_SCALE, oldScale / ZOOM_FACTOR)
       if (newScale === oldScale) return
 
@@ -269,7 +298,7 @@ export default function PdfiumRawViewer() {
     const oldScale = scale
     const newScale =
       direction === 'in'
-        ? Math.min(MAX_SCALE, oldScale * ZOOM_FACTOR)
+        ? Math.min(maxScale, oldScale * ZOOM_FACTOR)
         : Math.max(MIN_SCALE, oldScale / ZOOM_FACTOR)
     if (newScale === oldScale) return
 
@@ -363,7 +392,7 @@ export default function PdfiumRawViewer() {
           <button onClick={() => handleZoom('out')} style={btnStyle} title="Zoom out">
             −
           </button>
-          <span style={{ color: '#e0e0e0', fontSize: '0.85rem', minWidth: 45, textAlign: 'center' }}>
+          <span style={{ color: '#e0e0e0', fontSize: '0.85rem', minWidth: 55, textAlign: 'center' }}>
             {zoomPercent}%
           </span>
           <button onClick={() => handleZoom('in')} style={btnStyle} title="Zoom in">
@@ -401,7 +430,7 @@ export default function PdfiumRawViewer() {
         )}
 
         <span style={{ color: '#555', fontSize: '0.8rem', flexShrink: 0 }}>
-          Click to place mark · Drag to pan · Ctrl+wheel to zoom
+          Click to place mark · Drag to pan · Ctrl+wheel to zoom · Max {Math.round(maxScale * 100)}%
         </span>
       </header>
 
@@ -612,11 +641,8 @@ function PageCanvas({
       // ── Determine clip region ─────────────────────────────────────
       const dpr = window.devicePixelRatio || 1
 
-      // Calculate the max scale at which the full page fits in canvas limits
-      const maxRenderScale = Math.min(
-        MAX_CANVAS_DIM / (widthPt * dpr),
-        MAX_CANVAS_DIM / (heightPt * dpr),
-      )
+      // Max scale respecting both canvas-dimension and WASM-memory limits
+      const maxRenderScale = computeMaxScale(widthPt, heightPt, dpr)
       const renderScale = Math.min(scale, maxRenderScale)
       const fullPageFits = scale <= maxRenderScale
 
