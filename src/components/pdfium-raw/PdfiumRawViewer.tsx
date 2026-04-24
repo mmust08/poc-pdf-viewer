@@ -60,6 +60,8 @@ export default function PdfiumRawViewer() {
   const [scrollVersion, setScrollVersion] = useState(0)
   const [docVersion, setDocVersion] = useState(0)
   const [maxScale, setMaxScale] = useState(50)
+  const [rendering, setRendering] = useState(false)
+  const renderingCountRef = useRef(0) // track in-flight render requests
 
   const { userMarks, addMark, clearMarks, restoreMarks, saveAndReset, getMarksForPage } =
     useMarks(pdfName, loading)
@@ -71,7 +73,13 @@ export default function PdfiumRawViewer() {
   const requestRender = useCallback(
     (pageIndex: number, renderScale: number, dpr: number, callback: RenderCallback): number => {
       const id = ++renderIdRef.current
-      renderCallbacksRef.current.set(id, callback)
+      renderingCountRef.current++
+      setRendering(true)
+      renderCallbacksRef.current.set(id, (msg) => {
+        renderingCountRef.current = Math.max(0, renderingCountRef.current - 1)
+        if (renderingCountRef.current === 0) setRendering(false)
+        callback(msg)
+      })
       workerRef.current?.postMessage({ type: 'render', id, pageIndex, scale: renderScale, dpr })
       return id
     },
@@ -328,6 +336,10 @@ export default function PdfiumRawViewer() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      {/* Cursor style — progress cursor while worker is rendering */}
+      {rendering && <style>{`
+        .pdfium-container, .pdfium-container * { cursor: progress !important; }
+      `}</style>}
       {/* Toolbar */}
       <header
         style={{
@@ -407,6 +419,7 @@ export default function PdfiumRawViewer() {
       {/* Scrollable PDF container */}
       <div
         ref={containerRef}
+        className="pdfium-container"
         onScroll={handleScroll}
         onMouseDown={handlePanStart}
         onMouseMove={handlePanMove}
