@@ -101,7 +101,7 @@ self.onmessage = async (e: MessageEvent) => {
             height: result.height,
             renderScale,
           },
-          { transfer: [buf] }, // zero-copy
+          [buf], // transfer (zero-copy)
         )
       } catch (err) {
         self.postMessage({ type: 'renderDone', id: msg.id, error: `${err}` })
