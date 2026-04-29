@@ -45,6 +45,15 @@ const prototypes = [
       'embedPdf headless mode renders pages via PDFium WASM engine. Scroller handles continuous vertical layout with virtualization. Zoom and Pan plugins provide interactive controls. Marks are SVG circles overlaid per page in the renderPage callback.',
     difficulty: 'Low-Medium',
     notes: '',
+  },
+  {
+    path: '/prototype/nutrient',
+    name: 'Prototype 6 — Nutrient Web SDK (formerly PSPDFKit)',
+    paradigm: 'Commercial SDK with PDFium engine, built-in viewer, and native annotation API',
+    description:
+      'Nutrient Web SDK provides a complete viewer with PDFium-based vector rendering, built-in zoom/pan, and a native annotation API. Marks are implemented as NoteAnnotation objects that automatically anchor to PDF coordinates across all zoom levels. Includes sidebar with mark list, click-to-navigate, and JSON export.',
+    difficulty: 'Low',
+    notes: 'NOTES_PROTO6.md',
   }
 ]
 
@@ -102,6 +111,7 @@ export default function LandingPage() {
             ['Leaflet CRS.Simple', 'Leaflet recalculates', 'Map-native', 'react-leaflet', 'Medium-High'],
             ['embedPdf Headless', 'SVG overlay per page', 'Zoom/Pan plugins', 'Native React hooks', 'Low-Medium'],
             ['PDFium Raw WASM', 'SVG overlay per page', 'Custom (25%-5000%)', 'Native React', 'Medium'],
+            ['Nutrient SDK', 'Native annotations (SDK)', 'SDK-native', 'Imperative ref', 'Low'],
           ].map((row, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : '#16213e' }}>
               {row.map((cell, j) => (

@@ -1,0 +1,11 @@
+.PSPDFKit-Scroll {
+  will-change: transform;
+  contain: layout style paint;
+}
+.PSPDFKit-Page {
+  will-change: transform;
+  contain: layout paint;
+}
+.PSPDFKit-Spread {
+  contain: layout paint;
+}
