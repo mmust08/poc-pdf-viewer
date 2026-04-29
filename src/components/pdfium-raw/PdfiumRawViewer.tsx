@@ -2,9 +2,9 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useMarks } from './useMarks'
 import MarksOverlay from './MarksOverlay'
+import { scaleToNormalized, MIN_SCALE, MAX_NORMALIZED } from './zoomUtils'
 
 const ZOOM_FACTOR = 1.25
-const MIN_SCALE = 0.25
 const MAX_CANVAS_DIM = 16384
 const PAGE_GAP = 12
 
@@ -67,7 +67,7 @@ export default function PdfiumRawViewer() {
     useMarks(pdfName, loading)
 
   const pageCount = pageGeometries.length
-  const zoomPercent = Math.round(scale * 100)
+  const zoomPercent = scaleToNormalized(scale, MIN_SCALE, maxScale)
 
   // ── Request a render from the worker ──────────────────────────────────
   const requestRender = useCallback(
@@ -412,7 +412,7 @@ export default function PdfiumRawViewer() {
         )}
 
         <span style={{ color: '#555', fontSize: '0.8rem', flexShrink: 0 }}>
-          Click to place mark · Drag to pan · Ctrl+wheel to zoom · Max {Math.round(maxScale * 100)}%
+          Click to place mark · Drag to pan · Ctrl+wheel to zoom · Max {MAX_NORMALIZED}%
         </span>
       </header>
 
