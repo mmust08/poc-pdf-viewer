@@ -24,22 +24,33 @@ export default function NutrientViewer() {
   const [isAdding, setIsAdding] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  const { instance, loading, error, pageCount, getPageHeight } =
+  const { instance, loading, error, pageCount, getPageHeight, getPageFormat, documentFormat } =
     useNutrientInstance(containerRef, pdfUrl, LICENSE_KEY)
 
   const handleZoomIn = useCallback(() => {
     if (!instance) return
-    instance.setViewState((v) => v.zoomIn())
+    const next = instance.currentZoomLevel * 1.1
+    if (next <= instance.maximumZoomLevel) {
+      instance.setViewState((v) => v.set('zoom', next))
+    }
   }, [instance])
 
   const handleZoomOut = useCallback(() => {
     if (!instance) return
-    instance.setViewState((v) => v.zoomOut())
+    const next = instance.currentZoomLevel / 1.1
+    if (next >= instance.minimumZoomLevel) {
+      instance.setViewState((v) => v.set('zoom', next))
+    }
   }, [instance])
 
   const handleFitWidth = useCallback(() => {
     if (!instance) return
     instance.setViewState((v) => v.set('zoom', NutrientSDK.ZoomMode.FIT_TO_WIDTH))
+  }, [instance])
+
+  const handleFitPage = useCallback(() => {
+    if (!instance) return
+    instance.setViewState((v) => v.set('zoom', NutrientSDK.ZoomMode.FIT_TO_VIEWPORT))
   }, [instance])
 
   const {
@@ -216,6 +227,22 @@ export default function NutrientViewer() {
           <span style={{ color: '#888', fontSize: '0.82rem' }}>{pdfName}</span>
         )}
 
+        {documentFormat && (
+          <span
+            style={{
+              background: '#1a3a5c',
+              color: '#7eb8f7',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              padding: '0.18rem 0.5rem',
+              borderRadius: 4,
+              border: '1px solid #2a4080',
+            }}
+          >
+            {documentFormat}
+          </span>
+        )}
+
         <div style={{ flex: 1 }} />
 
         {/* Upload PDF */}
@@ -241,7 +268,10 @@ export default function NutrientViewer() {
           +
         </button>
         <button onClick={handleFitWidth} style={btnStyle('#2a4080')} title="Fit to width">
-          Fit
+          Fit W
+        </button>
+        <button onClick={handleFitPage} style={btnStyle('#2a4080')} title="Fit full page">
+          Fit Page
         </button>
 
         <div style={{ width: 1, height: 24, background: '#2a4080' }} />
@@ -288,7 +318,6 @@ export default function NutrientViewer() {
             flex: 1,
             height: '100%',
             contain: 'layout style paint',
-            willChange: 'transform',
             cursor: isAdding ? 'crosshair' : undefined,
           }}
         />

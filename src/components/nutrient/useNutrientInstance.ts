@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import NutrientViewer from '@nutrient-sdk/viewer'
+import { detectPageFormat, optimalTileSize } from './pageFormats'
 
 NutrientViewer.preloadWorker({ useCDN: true })
 
 interface PageGeometry {
   widthPt: number
   heightPt: number
+  format: string
 }
 
 interface UseNutrientInstanceResult {
@@ -14,6 +16,8 @@ interface UseNutrientInstanceResult {
   error: string | null
   pageCount: number
   getPageHeight: (pageIndex: number) => number
+  getPageFormat: (pageIndex: number) => string
+  documentFormat: string | null
 }
 
 export function useNutrientInstance(
@@ -25,6 +29,7 @@ export function useNutrientInstance(
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pageCount, setPageCount] = useState(0)
+  const [documentFormat, setDocumentFormat] = useState<string | null>(null)
   const pageGeometriesRef = useRef<PageGeometry[]>([])
 
   useEffect(() => {
@@ -44,11 +49,10 @@ export function useNutrientInstance(
           document: documentUrl,
           licenseKey: licenseKey || undefined,
           useCDN: true,
-          // toolbarItems: [],  // Temporarily show SDK toolbar for rendering quality testing
           autoSaveMode: NutrientViewer.AutoSaveMode.DISABLED,
           zoom: {
             zoomMode: NutrientViewer.ZoomMode.FIT_TO_WIDTH,
-            wheelZoomMode: NutrientViewer.WheelZoomMode.ALWAYS,
+            wheelZoomMode: NutrientViewer.WheelZoomMode.WITH_CTRL,
             options: {
               enableKeyboardZoom: true,
               enableGestureZoom: true,
@@ -67,14 +71,58 @@ export function useNutrientInstance(
         const geometries: PageGeometry[] = []
         for (let i = 0; i < total; i++) {
           const info = inst.pageInfoForIndex(i)
+          const w = info?.width ?? 612
+          const h = info?.height ?? 792
           geometries.push({
-            widthPt: info?.width ?? 612,
-            heightPt: info?.height ?? 792,
+            widthPt: w,
+            heightPt: h,
+            format: detectPageFormat(w, h),
           })
         }
         pageGeometriesRef.current = geometries
 
-        setInstance(inst)
+        const formats = new Set(geometries.map((g) => g.format))
+        setDocumentFormat(formats.size === 1 ? [...formats][0] : 'Mixed')
+
+        const needed = optimalTileSize(geometries)
+        if (needed !== 2048) {
+          NutrientViewer.unload(container!)
+          if (cancelled) return
+
+          const reinstated = await NutrientViewer.load({
+            container: container!,
+            document: documentUrl,
+            licenseKey: licenseKey || undefined,
+            useCDN: true,
+            autoSaveMode: NutrientViewer.AutoSaveMode.DISABLED,
+            zoom: {
+              zoomMode: NutrientViewer.ZoomMode.FIT_TO_WIDTH,
+              wheelZoomMode: NutrientViewer.WheelZoomMode.WITH_CTRL,
+              options: {
+                enableKeyboardZoom: true,
+                enableGestureZoom: true,
+              },
+            },
+            styleSheets: ['/nutrient-perf.css'],
+            tileSize: needed,
+          })
+
+          if (cancelled) {
+            NutrientViewer.unload(container!)
+            return
+          }
+
+          reinstated.setViewState((v) =>
+            v.set('zoomStep', 1.1).set('prerenderedPageSpreads', 3),
+          )
+          setInstance(reinstated)
+        } else {
+          inst.setViewState((v) =>
+            v.set('zoomStep', 1.1).set('prerenderedPageSpreads', 3),
+          )
+          setInstance(inst)
+        }
+
         setPageCount(total)
         setLoading(false)
       } catch (err) {
@@ -100,5 +148,9 @@ export function useNutrientInstance(
     return pageGeometriesRef.current[pageIndex]?.heightPt ?? 792
   }, [])
 
-  return { instance, loading, error, pageCount, getPageHeight }
+  const getPageFormat = useCallback((pageIndex: number): string => {
+    return pageGeometriesRef.current[pageIndex]?.format ?? 'Unknown'
+  }, [])
+
+  return { instance, loading, error, pageCount, getPageHeight, getPageFormat, documentFormat }
 }
