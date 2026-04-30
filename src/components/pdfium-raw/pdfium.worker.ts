@@ -3,28 +3,13 @@
  * keeping the main thread free for smooth zoom / pan / UI.
  */
 import { PDFiumLibrary } from '@hyzyla/pdfium/browser/cdn'
-
-// Same constant as main thread — keep in sync
-const MAX_CANVAS_DIM = 16384
-const MAX_BITMAP_PIXELS = 100_000_000
-
-interface PageGeo {
-  widthPt: number
-  heightPt: number
-}
+import { computeMaxScale, computeWorstMaxScale, type PageGeometry } from './renderMath'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let library: any = null
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let doc: any = null
-let pageGeometries: PageGeo[] = []
-
-function computeMaxScale(widthPt: number, heightPt: number, dpr: number): number {
-  const maxByDimW = MAX_CANVAS_DIM / (widthPt * dpr)
-  const maxByDimH = MAX_CANVAS_DIM / (heightPt * dpr)
-  const maxByMemory = Math.sqrt(MAX_BITMAP_PIXELS / (widthPt * heightPt)) / dpr
-  return Math.min(maxByDimW, maxByDimH, maxByMemory)
-}
+let pageGeometries: PageGeometry[] = []
 
 // ── Message handler ─────────────────────────────────────────────────────
 self.onmessage = async (e: MessageEvent) => {
@@ -122,11 +107,7 @@ async function loadDocument(data: Uint8Array, dpr: number) {
     pageGeometries.push({ widthPt: size.originalWidth, heightPt: size.originalHeight })
   }
 
-  // Compute max safe zoom from the largest page
-  let worstMax = Infinity
-  for (const g of pageGeometries) {
-    worstMax = Math.min(worstMax, computeMaxScale(g.widthPt, g.heightPt, dpr))
-  }
+  const worstMax = computeWorstMaxScale(pageGeometries, dpr)
   const maxScale = Math.max(1, Math.floor(worstMax * 100) / 100)
 
   self.postMessage({
