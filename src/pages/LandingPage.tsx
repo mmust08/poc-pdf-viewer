@@ -3,12 +3,22 @@ import { Link } from 'react-router-dom'
 const prototypes = [
   {
     path: '/prototype/pdfjs',
-    name: 'Prototype 1 — PDF.js + react-zoom-pan-pinch',
+    name: 'Prototype 1.1 — PDF.js + react-zoom-pan-pinch with Upload',
     paradigm: 'Canvas render + CSS transform container',
     description:
-      'PDF.js renders the page to a <canvas>. An <svg> overlay (absolutely positioned, same container) holds the marks. react-zoom-pan-pinch wraps both in a single CSS matrix() transform — marks anchor for free.',
+      'PDF.js renders the page to a <canvas>. An <svg> overlay (absolutely positioned, same container) holds the marks. react-zoom-pan-pinch wraps both in a single CSS matrix() transform — marks anchor for free. Supports PDF file upload from your computer.',
     difficulty: 'Low',
     notes: 'NOTES_PROTO1.md',
+    visible: true,
+  },
+  {
+    path: '/prototype/pdfjs-canvas',
+    name: 'Prototype 1.2 — PDF.js Canvas Tile Renderer',
+    paradigm: 'Tiled canvas rendering with CSS upscaling during zoom',
+    description:
+      'PDF.js renders pages in 512×512 tiles for efficient viewport-based caching. Marks are SVG overlays. During zoom, tiles are CSS-scaled until render finishes, eliminating white flash. Supports zoom levels from 50% to 1600% with anchor-point zoom and right-click panning.',
+    difficulty: 'Medium',
+    notes: '',
     visible: true,
   },
   {
@@ -70,8 +80,8 @@ export default function LandingPage() {
         AJB-14023 — PDF Viewer Technology Evaluation
       </h1>
       <p style={{ color: '#aaa', marginBottom: '2rem' }}>
-        Three minimal prototypes for evaluating browser PDF rendering with overlaid coordinate marks,
-        zoom, and pan. Each prototype uses 5 hardcoded marks in PDF coordinate space.
+        Multiple prototypes for evaluating browser PDF rendering with overlaid coordinate marks,
+        zoom, and pan. Each prototype uses 5 hardcoded marks in PDF coordinate space. Supports PDF upload from your computer.
       </p>
 
       <div style={{ marginBottom: '2rem' }}>

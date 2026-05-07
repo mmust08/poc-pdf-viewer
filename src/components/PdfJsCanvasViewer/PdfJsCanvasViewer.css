@@ -1,0 +1,165 @@
+.pdfjs-wrapper {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: #2a2a2a;
+    color: #e5e4e7;
+}
+
+.pdfjs-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #1f1f1f;
+    border-bottom: 1px solid #333;
+    font-size: 13px;
+    z-index: 1;
+}
+
+.pdfjs-toolbar button {
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font: inherit;
+}
+
+.pdfjs-toolbar button:hover {
+    background: #444;
+}
+
+.pdfjs-toolbar button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pdfjs-toolbar .pdfjs-btn-danger {
+    border-color: #7a2e2e;
+}
+
+.pdfjs-toolbar .pdfjs-btn-danger:hover:not(:disabled) {
+    background: #8b1a1a;
+    border-color: #a33;
+}
+
+.pdfjs-toolbar .hint {
+    margin-left: auto;
+    opacity: 0.6;
+    font-size: 12px;
+}
+
+.pdfjs-canvas-scroll {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    user-select: none;
+}
+
+.pdfjs-canvas-scroll.panning {
+    cursor: grabbing;
+}
+
+.pdfjs-page {
+    position: relative;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    margin: 20px;
+}
+
+.pdfjs-tile-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    /* Above the stale wrap so fresh tiles paint over it as they pop in. */
+    z-index: 1;
+}
+
+/* Holds the previously-drawn tile canvases CSS-scaled to the current visible scale while
+   fresh tiles render off-DOM. Removed instantly on tr.onIdle — no fade. */
+.pdfjs-stale-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.pdfjs-tile {
+    display: block;
+}
+
+.pdfjs-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: all;
+}
+
+.pdfjs-mark {
+    cursor: pointer;
+}
+
+.pdfjs-mark.dragging {
+    cursor: grabbing;
+}
+
+.pdfjs-loading,
+.pdfjs-error {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.pdfjs-error {
+    background: rgba(180, 40, 40, 0.85);
+}
+
+/* Centered "Rendering…" pill, mounted while the stale wrap is up so the user knows the page
+   they see is the upscaled snapshot, not the final render. Removed the moment the renderer
+   reports idle. */
+.pdfjs-render-status {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 3;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.pdfjs-render-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: pdfjs-spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes pdfjs-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

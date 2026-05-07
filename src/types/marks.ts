@@ -12,6 +12,7 @@ export interface PdfMark {
   x: number;     // PDF points from left edge
   y: number;     // PDF points from bottom edge (PDF coordinate space)
   label: string;
+  color?: string; // optional color for display
 }
 
 export const HARDCODED_MARKS: PdfMark[] = [
