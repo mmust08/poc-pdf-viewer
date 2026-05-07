@@ -4,61 +4,61 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 
-const pageStyle: React.CSSProperties = {
-  background: '#0f172a',
-  minHeight: '100vh',
-  color: '#e0e0e0',
-  fontFamily: 'system-ui, sans-serif',
-}
-
-const contentStyle: React.CSSProperties = {
-  maxWidth: 860,
-  margin: '0 auto',
-  padding: '2rem',
-}
-
-const backLinkStyle: React.CSSProperties = {
-  display: 'inline-block',
-  marginBottom: '1.5rem',
-  color: '#7eb8f7',
-  textDecoration: 'none',
-  fontSize: '0.95rem',
-}
-
 const components: Components = {
   h1: ({ children }) => (
-    <h1
-      style={{
-        color: '#7eb8f7',
-        borderBottom: '2px solid #7eb8f7',
-        paddingBottom: '0.5rem',
-        marginTop: '1.5rem',
-        marginBottom: '1rem',
-      }}
-    >
+    <h1 style={{
+      color: 'var(--clr-text-primary)',
+      borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+      paddingBottom: '0.5rem',
+      marginTop: '1.5rem',
+      marginBottom: '1rem',
+      fontSize: '1.5rem',
+      fontWeight: 700,
+      letterSpacing: '-0.02em',
+    }}>
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 style={{ color: '#7eb8f7', marginTop: '1.5rem', marginBottom: '0.75rem' }}>
+    <h2 style={{
+      color: 'var(--clr-text-primary)',
+      marginTop: '1.75rem',
+      marginBottom: '0.75rem',
+      fontSize: '1.15rem',
+      fontWeight: 600,
+    }}>
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 style={{ color: '#7eb8f7', marginTop: '1.25rem', marginBottom: '0.5rem' }}>
+    <h3 style={{
+      color: 'var(--clr-text-primary)',
+      marginTop: '1.25rem',
+      marginBottom: '0.5rem',
+      fontSize: '1rem',
+      fontWeight: 600,
+    }}>
       {children}
     </h3>
   ),
   h4: ({ children }) => (
-    <h4 style={{ color: '#7eb8f7', marginTop: '1rem', marginBottom: '0.5rem' }}>
+    <h4 style={{
+      color: 'var(--clr-text-secondary)',
+      marginTop: '1rem',
+      marginBottom: '0.5rem',
+      fontSize: '0.9rem',
+      fontWeight: 600,
+    }}>
       {children}
     </h4>
   ),
   p: ({ children }) => (
-    <p style={{ lineHeight: 1.7, marginBottom: '0.85rem' }}>{children}</p>
+    <p style={{ lineHeight: 1.7, marginBottom: '0.85rem', color: 'var(--clr-text-secondary)' }}>
+      {children}
+    </p>
   ),
   a: ({ href, children }) => (
-    <a href={href} style={{ color: '#7eb8f7' }} target="_blank" rel="noreferrer">
+    <a href={href} style={{ color: 'var(--clr-purple-400)' }} target="_blank" rel="noreferrer">
       {children}
     </a>
   ),
@@ -68,14 +68,16 @@ const components: Components = {
       return (
         <code
           style={{
-            fontFamily: 'monospace',
-            background: '#1e293b',
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+            background: 'rgba(0, 0, 0, 0.35)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
             display: 'block',
-            padding: '1rem',
-            borderRadius: 6,
+            padding: '1rem 1.25rem',
+            borderRadius: 10,
             overflowX: 'auto',
-            fontSize: '0.9rem',
-            lineHeight: 1.6,
+            fontSize: '0.85rem',
+            lineHeight: 1.65,
+            color: '#d4d0f0',
           }}
           className={className}
         >
@@ -84,106 +86,97 @@ const components: Components = {
       )
     }
     return (
-      <code
-        style={{
-          background: '#1e293b',
-          padding: '2px 6px',
-          borderRadius: 3,
-          fontFamily: 'monospace',
-          fontSize: '0.88em',
-        }}
-      >
+      <code style={{
+        background: 'rgba(139, 92, 246, 0.12)',
+        border: '1px solid rgba(139, 92, 246, 0.2)',
+        padding: '1px 6px',
+        borderRadius: 4,
+        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+        fontSize: '0.85em',
+        color: 'var(--clr-purple-300)',
+      }}>
         {children}
       </code>
     )
   },
   pre: ({ children }) => (
-    <pre
-      style={{
-        background: '#1e293b',
-        padding: '1rem',
-        borderRadius: 6,
-        overflowX: 'auto',
-        marginBottom: '1rem',
-      }}
-    >
+    <pre style={{
+      background: 'rgba(0, 0, 0, 0.35)',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      padding: '1rem 1.25rem',
+      borderRadius: 10,
+      overflowX: 'auto',
+      marginBottom: '1rem',
+    }}>
       {children}
     </pre>
   ),
   table: ({ children }) => (
     <div style={{ overflowX: 'auto', marginBottom: '1rem' }}>
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: '0.9rem',
-        }}
-      >
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
         {children}
       </table>
     </div>
   ),
   th: ({ children }) => (
-    <th
-      style={{
-        padding: '0.6rem 1rem',
-        textAlign: 'left',
-        borderBottom: '2px solid #2a4080',
-        background: '#16213e',
-        color: '#7eb8f7',
-      }}
-    >
+    <th style={{
+      padding: '0.6rem 1rem',
+      textAlign: 'left',
+      borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+      background: 'rgba(139, 92, 246, 0.06)',
+      color: 'var(--clr-purple-300)',
+      fontWeight: 600,
+      fontSize: '0.82rem',
+      letterSpacing: '0.03em',
+    }}>
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td
-      style={{
-        padding: '0.6rem 1rem',
-        borderBottom: '1px solid #2a4080',
-      }}
-    >
+    <td style={{
+      padding: '0.6rem 1rem',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      color: 'var(--clr-text-secondary)',
+      fontSize: '0.875rem',
+    }}>
       {children}
     </td>
   ),
   tr: ({ children }) => (
     <tr
-      style={{ background: 'transparent' }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(42,64,128,0.2)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(139, 92, 246, 0.04)' }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
     >
       {children}
     </tr>
   ),
   blockquote: ({ children }) => (
-    <blockquote
-      style={{
-        borderLeft: '3px solid #2a4080',
-        marginLeft: 0,
-        paddingLeft: '1rem',
-        color: '#aaa',
-        fontStyle: 'italic',
-      }}
-    >
+    <blockquote style={{
+      borderLeft: '3px solid rgba(139, 92, 246, 0.4)',
+      marginLeft: 0,
+      paddingLeft: '1rem',
+      color: 'var(--clr-text-muted)',
+      fontStyle: 'italic',
+    }}>
       {children}
     </blockquote>
   ),
   ul: ({ children }) => (
-    <ul style={{ paddingLeft: '1.5rem', lineHeight: 1.7, marginBottom: '0.85rem' }}>
+    <ul style={{ paddingLeft: '1.5rem', lineHeight: 1.7, marginBottom: '0.85rem', color: 'var(--clr-text-secondary)' }}>
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol style={{ paddingLeft: '1.5rem', lineHeight: 1.7, marginBottom: '0.85rem' }}>
+    <ol style={{ paddingLeft: '1.5rem', lineHeight: 1.7, marginBottom: '0.85rem', color: 'var(--clr-text-secondary)' }}>
       {children}
     </ol>
   ),
   li: ({ children }) => <li style={{ marginBottom: '0.25rem' }}>{children}</li>,
   hr: () => (
-    <hr style={{ border: 'none', borderTop: '1px solid #2a4080', margin: '1.5rem 0' }} />
+    <hr style={{ border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.07)', margin: '1.5rem 0' }} />
   ),
   strong: ({ children }) => (
-    <strong style={{ color: '#e0e0e0', fontWeight: 600 }}>{children}</strong>
+    <strong style={{ color: 'var(--clr-text-primary)', fontWeight: 600 }}>{children}</strong>
   ),
 }
 
@@ -220,45 +213,76 @@ export default function NotesPage() {
   const title = filename ? filename.replace(/\.md$/i, '') : 'Notes'
 
   return (
-    <div style={pageStyle}>
-      <div style={contentStyle}>
-        <Link to="/" style={backLinkStyle}>
-          ← Back
+    <div style={{ minHeight: '100vh' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '3rem 2rem' }}>
+        <Link
+          to="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            marginBottom: '2rem',
+            color: 'var(--clr-text-muted)',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            transition: 'color 0.15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-purple-400)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-muted)' }}
+        >
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path d="M12 7.5H3M6.5 4L3 7.5L6.5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Back
         </Link>
 
         {loading && (
-          <p style={{ color: '#aaa', marginTop: '2rem' }}>Loading {filename}…</p>
+          <p style={{ color: 'var(--clr-text-muted)', marginTop: '2rem', fontSize: '0.9rem' }}>
+            Loading {filename}…
+          </p>
         )}
 
         {error && (
-          <div
-            style={{
-              marginTop: '2rem',
-              padding: '1rem 1.5rem',
-              background: '#1e293b',
-              border: '1px solid #c0392b',
-              borderRadius: 6,
-              color: '#e74c3c',
-            }}
-          >
+          <div style={{
+            marginTop: '2rem',
+            padding: '1rem 1.25rem',
+            background: 'rgba(248, 113, 113, 0.06)',
+            border: '1px solid rgba(248, 113, 113, 0.2)',
+            borderRadius: 10,
+            color: '#f87171',
+            fontSize: '0.9rem',
+          }}>
             <strong>Error:</strong> {error}
           </div>
         )}
 
         {!loading && !error && markdown !== null && (
           <>
-            <h1
-              style={{
-                color: '#7eb8f7',
-                borderBottom: '2px solid #7eb8f7',
-                paddingBottom: '0.5rem',
+            <div style={{
+              background: 'var(--clr-surface)',
+              backdropFilter: 'blur(16px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+              border: '1px solid var(--clr-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '2rem 2.5rem',
+              boxShadow: 'var(--shadow-card)',
+            }}>
+              <h1 style={{
+                color: 'var(--clr-text-primary)',
+                borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+                paddingBottom: '0.75rem',
                 marginTop: 0,
                 marginBottom: '1.5rem',
-              }}
-            >
-              {title}
-            </h1>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{markdown}</ReactMarkdown>
+                fontSize: '1.5rem',
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+              }}>
+                {title}
+              </h1>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                {markdown}
+              </ReactMarkdown>
+            </div>
           </>
         )}
       </div>
