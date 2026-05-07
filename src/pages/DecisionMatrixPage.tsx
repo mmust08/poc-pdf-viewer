@@ -58,9 +58,9 @@ const criteria = [
 ]
 
 const prototypes = [
-  { id: 'proto1', name: 'Prototype 1 — PDF.js + react-zoom-pan-pinch', color: '#7eb8f7' },
-  { id: 'proto5', name: 'Prototype 5 — PDFium Raw WASM', color: '#50c878' },
-  { id: 'proto6', name: 'Prototype 6 — Nutrient Web SDK', color: '#ffa500' },
+  { id: 'proto1', name: 'PDF.js + react-zoom-pan-pinch', color: '#7eb8f7' },
+  { id: 'proto5', name: 'PDFium Raw WASM', color: '#50c878' },
+  { id: 'proto6', name: 'Nutrient Web SDK', color: '#ffa500' },
 ]
 
 export default function DecisionMatrixPage() {
@@ -94,7 +94,7 @@ export default function DecisionMatrixPage() {
         Decision Matrix: Prototype Selection
       </h1>
       <p style={{ color: '#aaa', marginBottom: '2rem' }}>
-        Comparison of Prototypes 1, 5, and 6 across key evaluation criteria. Scores are on a scale of 1-10.
+        Comparison of PDF.js, PDFium Raw WASM, and Nutrient Web SDK across key evaluation criteria. Scores are on a scale of 1-10.
       </p>
 
       {/* Overall Scores Summary */}
@@ -214,7 +214,7 @@ export default function DecisionMatrixPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
           <div>
-            <h3 style={{ color: '#50c878', marginTop: 0 }}>Recommended for Simplicity: Prototype 1</h3>
+            <h3 style={{ color: '#50c878', marginTop: 0 }}>Recommended for Simplicity: PDF.js</h3>
             <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.5rem' }}>
               <li>Excellent zoom range (25%-5000%)</li>
               <li>Maintains accuracy across all zoom levels</li>
@@ -227,7 +227,7 @@ export default function DecisionMatrixPage() {
           </div>
 
           <div>
-            <h3 style={{ color: '#7eb8f7', marginTop: 0 }}>Best Overall: Prototype 5</h3>
+            <h3 style={{ color: '#7eb8f7', marginTop: 0 }}>Best Overall: PDFium Raw WASM</h3>
             <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.5rem' }}>
               <li>Excellent performance (60fps for large documents)</li>
               <li>Chrome-grade rendering accuracy (PDFium)</li>
@@ -241,9 +241,9 @@ export default function DecisionMatrixPage() {
         </div>
 
         <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #2a4080' }}>
-          <h3 style={{ color: '#ffa500', marginTop: 0 }}>Prototype 6 (Not Recommended)</h3>
+          <h3 style={{ color: '#ffa500', marginTop: 0 }}>Nutrient Web SDK (Not Recommended)</h3>
           <p style={{ margin: '0.5rem 0 0' }}>
-            Despite being a commercial solution, Prototype 6 fails to render PDF details accurately when zoomed, making it unsuitable for detailed technical document viewing. The rendering quality degrades at higher zoom levels, which is critical for blueprint/drawing evaluation.
+            Despite being a commercial solution, Nutrient Web SDK fails to render PDF details accurately when zoomed, making it unsuitable for detailed technical document viewing. The rendering quality degrades at higher zoom levels, which is critical for blueprint/drawing evaluation.
           </p>
         </div>
       </div>
