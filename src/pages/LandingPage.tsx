@@ -18,7 +18,7 @@ const prototypes = [
     description:
       'PDF.js renders pages in 512×512 tiles for efficient viewport-based caching. Marks are SVG overlays. During zoom, tiles are CSS-scaled until render finishes, eliminating white flash. Supports zoom levels from 50% to 1600% with anchor-point zoom and right-click panning.',
     difficulty: 'Medium',
-    notes: '',
+    notes: 'NOTES_PROTO1_2.md',
     visible: true,
   },
   {
