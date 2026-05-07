@@ -3,21 +3,23 @@ import { Link } from 'react-router-dom'
 const prototypes = [
   {
     path: '/prototype/pdfjs',
-    name: 'Prototype 1 — PDF.js + react-zoom-pan-pinch ⭐⭐⭐⭐',
+    name: 'Prototype 1 — PDF.js + react-zoom-pan-pinch',
     paradigm: 'Canvas render + CSS transform container',
     description:
       'PDF.js renders the page to a <canvas>. An <svg> overlay (absolutely positioned, same container) holds the marks. react-zoom-pan-pinch wraps both in a single CSS matrix() transform — marks anchor for free.',
     difficulty: 'Low',
     notes: 'NOTES_PROTO1.md',
+    visible: true,
   },
   {
     path: '/prototype/pdfium-raw',
-    name: 'Prototype 5 — PDFium Raw WASM ⭐⭐⭐⭐⭐',
+    name: 'Prototype 5 — PDFium Raw WASM',
     paradigm: 'Native PDFium WASM engine with custom viewer built from scratch',
     description:
       'Direct PDFium WASM rendering via @hyzyla/pdfium — zero dependencies, Chromium-grade quality. Custom zoom/pan (25%-5000%), multi-page scroll with virtualization, adaptive-scale rendering with viewport clipping, double-buffered canvas, and click-to-add marks with localStorage persistence. Single WASM dependency, all viewer code built from scratch.',
     difficulty: 'Medium',
     notes: 'NOTES_PROTO5.md',
+    visible: true,
   },
   {
     path: '/prototype/fabric',
@@ -27,6 +29,7 @@ const prototypes = [
       'PDF.js renders to an offscreen canvas → data URL. Fabric.js displays it as a background image. Marks are fabric.Circle + fabric.Text objects. canvas.zoomToPoint() and canvas.relativePan() apply a viewport matrix to the whole scene.',
     difficulty: 'Medium',
     notes: 'NOTES_PROTO2.md',
+    visible: false,
   },
   {
     path: '/prototype/leaflet',
@@ -36,6 +39,7 @@ const prototypes = [
       'PDF.js renders to a data URL → Leaflet ImageOverlay on a CRS.Simple map. Marks are L.marker with L.divIcon. Leaflet recalculates all marker screen positions on every view change — map-quality pan/zoom UX.',
     difficulty: 'Medium-High',
     notes: 'NOTES_PROTO3.md',
+    visible: false,
   },
   {
     path: '/prototype/embedpdf',
@@ -45,6 +49,7 @@ const prototypes = [
       'embedPdf headless mode renders pages via PDFium WASM engine. Scroller handles continuous vertical layout with virtualization. Zoom and Pan plugins provide interactive controls. Marks are SVG circles overlaid per page in the renderPage callback.',
     difficulty: 'Low-Medium',
     notes: '',
+    visible: false,
   },
   {
     path: '/prototype/nutrient',
@@ -54,6 +59,7 @@ const prototypes = [
       'Nutrient Web SDK provides a complete viewer with PDFium-based vector rendering, built-in zoom/pan, and a native annotation API. Marks are implemented as NoteAnnotation objects that automatically anchor to PDF coordinates across all zoom levels. Includes sidebar with mark list, click-to-navigate, and JSON export.',
     difficulty: 'Low',
     notes: 'NOTES_PROTO6.md',
+    visible: true,
   }
 ]
 
@@ -69,7 +75,7 @@ export default function LandingPage() {
       </p>
 
       <div style={{ display: 'grid', gap: '1.5rem' }}>
-        {prototypes.map((p) => (
+        {prototypes.filter(p => p.visible).map((p) => (
           <div
             key={p.path}
             style={{
@@ -88,13 +94,29 @@ export default function LandingPage() {
             <p style={{ margin: '0 0 0.75rem', lineHeight: 1.6 }}>{p.description}</p>
             <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: '#aaa' }}>
               <span>Setup complexity: <strong style={{ color: '#e0e0e0' }}>{p.difficulty}</strong></span>
-              <span>Notes: <strong style={{ color: '#e0e0e0' }}>{p.notes}</strong></span>
+              <span>
+                Notes:{' '}
+                {p.notes ? (
+                  <Link
+                    to={`/notes/${p.notes}`}
+                    style={{
+                      color: '#7eb8f7',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {p.notes}
+                  </Link>
+                ) : (
+                  <strong style={{ color: '#e0e0e0' }}>—</strong>
+                )}
+              </span>
             </div>
           </div>
         ))}
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '2rem', fontSize: '0.9rem' }}>
+      {/* <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '2rem', fontSize: '0.9rem' }}>
         <thead>
           <tr style={{ background: '#16213e' }}>
             {['Technology', 'Mark anchoring', 'Zoom/Pan', 'React integration', 'Setup risk'].map((h) => (
@@ -122,7 +144,7 @@ export default function LandingPage() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table> */}
     </div>
   )
 }
