@@ -20,6 +20,7 @@ const MARGIN_MIN_PX = 800
 // Skip-render threshold: don't re-render if the viewport edge is still this
 // far inside the already-rendered region.
 const RERENDER_THRESHOLD_PX = 200
+const ZOOM_RENDER_DEBOUNCE_MS = 150
 
 // Page virtualisation: only mount PageCanvas for pages within this many
 // viewport-heights of the visible area.
@@ -502,6 +503,7 @@ function PageCanvas({
 
   useEffect(() => {
     let cancelled = false
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pdfDoc.getPage(pageNumber).then(async (page: any) => {
@@ -592,6 +594,27 @@ function PageCanvas({
         renderTaskRef.current = null
       }
 
+      // ── Interim CSS rescale (eliminates white flash during zoom) ─────────
+      // Stretch the old bitmap to visually approximate the new zoom level.
+      // The atomic swap at the end of this effect will replace these values
+      // with the correct crisp ones once the new render completes.
+      const rrOld = renderedRegionRef.current
+      if (rrOld && rrOld.scale !== scale) {
+        const ratio = scale / rrOld.scale
+        canvas.style.width  = `${(rrOld.clipRight - rrOld.clipLeft) * ratio}px`
+        canvas.style.height = `${(rrOld.clipBottom - rrOld.clipTop) * ratio}px`
+        canvas.style.left   = `${rrOld.clipLeft * ratio}px`
+        canvas.style.top    = `${rrOld.clipTop * ratio}px`
+      }
+
+      // ── Debounce ─────────────────────────────────────────────────────────
+      // Wait for rapid zoom events to settle before starting a full render.
+      // The cleanup function cancels this timer if a newer effect fires.
+      await new Promise<void>(resolve => {
+        debounceTimer = setTimeout(resolve, ZOOM_RENDER_DEBOUNCE_MS)
+      })
+      if (cancelled) return
+
       const offscreen = document.createElement('canvas')
       offscreen.width = Math.round(clipW * dpr)
       offscreen.height = Math.round(clipH * dpr)
@@ -638,6 +661,7 @@ function PageCanvas({
 
     return () => {
       cancelled = true
+      if (debounceTimer !== undefined) clearTimeout(debounceTimer)
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel()
         renderTaskRef.current = null
