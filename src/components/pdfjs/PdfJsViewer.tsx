@@ -290,38 +290,40 @@ export default function PdfJsViewer() {
       {/* Toolbar */}
       <header
         style={{
-          background: '#16213e',
+          background: 'rgba(10, 9, 18, 0.92)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           padding: '0.55rem 1.25rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
-          borderBottom: '1px solid #2a4080',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
           flexShrink: 0,
           flexWrap: 'wrap',
         }}
       >
-        <Link to="/" style={{ color: '#7eb8f7', flexShrink: 0 }}>
+        <Link to="/" style={{ color: '#a78bfa', flexShrink: 0, fontSize: '0.875rem', fontWeight: 500 }}>
           ← Back
         </Link>
-        <h2 style={{ margin: 0, fontSize: '0.9rem', flexShrink: 0, color: '#ccc' }}>
+        <h2 style={{ margin: 0, fontSize: '0.875rem', flexShrink: 0, color: '#a9a7c0', fontWeight: 500 }}>
           Prototype 1.1 — PDF.js · {pdfName}
         </h2>
         <div style={{ flex: 1 }} />
 
         {pageCount > 0 && (
-          <span style={{ color: '#aaa', fontSize: '0.85rem', flexShrink: 0 }}>
+          <span style={{ color: '#67647c', fontSize: '0.82rem', flexShrink: 0 }}>
             Page {currentPage} / {pageCount}
           </span>
         )}
 
-        <div style={{ width: 1, height: 24, background: '#2a4080' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
 
         {/* Zoom controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
           <button onClick={() => handleZoom('out')} style={btnStyle} title="Zoom out">
             −
           </button>
-          <span style={{ color: '#e0e0e0', fontSize: '0.85rem', minWidth: 45, textAlign: 'center' }}>
+          <span style={{ color: '#a9a7c0', fontSize: '0.83rem', minWidth: 45, textAlign: 'center' }}>
             {zoomPercent}%
           </span>
           <button onClick={() => handleZoom('in')} style={btnStyle} title="Zoom in">
@@ -329,7 +331,7 @@ export default function PdfJsViewer() {
           </button>
         </div>
 
-        <div style={{ width: 1, height: 24, background: '#2a4080' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
 
         <input
           ref={fileInputRef}
@@ -344,13 +346,13 @@ export default function PdfJsViewer() {
 
         {userMarks.length > 0 && (
           <>
-            <div style={{ width: 1, height: 24, background: '#2a4080' }} />
-            <span style={{ color: '#aaa', fontSize: '0.82rem' }}>
+            <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
+            <span style={{ color: '#67647c', fontSize: '0.82rem' }}>
               {userMarks.length} user mark{userMarks.length !== 1 ? 's' : ''}
             </span>
             <button
               onClick={clearMarks}
-              style={{ ...btnStyle, background: '#6b1a1a' }}
+              style={{ ...btnStyle, background: 'rgba(248, 113, 113, 0.1)', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.18)' }}
               title="Remove all user marks"
             >
               Clear all
@@ -358,7 +360,7 @@ export default function PdfJsViewer() {
           </>
         )}
 
-        <span style={{ color: '#555', fontSize: '0.8rem', flexShrink: 0 }}>
+        <span style={{ color: '#67647c', fontSize: '0.78rem', flexShrink: 0 }}>
           Click to place mark · Drag to pan · Ctrl+wheel to zoom
         </span>
       </header>
@@ -374,7 +376,7 @@ export default function PdfJsViewer() {
         style={{
           flex: 1,
           overflow: 'auto',
-          background: '#555',
+          background: '#3c3a48',
           padding: '8px 0',
           position: 'relative',
           cursor: isPanning ? 'grabbing' : 'grab',
@@ -687,9 +689,9 @@ function PageCanvas({
 }
 
 const btnStyle: React.CSSProperties = {
-  background: '#2a4080',
-  color: 'white',
-  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(139, 92, 246, 0.1)',
+  color: '#a78bfa',
+  border: '1px solid rgba(139, 92, 246, 0.2)',
   borderRadius: 5,
   padding: '0.32rem 0.7rem',
   cursor: 'pointer',

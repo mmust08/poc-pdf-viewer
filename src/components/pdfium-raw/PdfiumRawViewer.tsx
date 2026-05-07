@@ -109,7 +109,7 @@ export default function PdfiumRawViewer() {
         style={{
           flex: 1,
           overflow: 'auto',
-          background: '#555',
+          background: '#3c3a48',
           padding: '8px 0',
           position: 'relative',
           cursor: isPanning ? 'grabbing' : 'grab',

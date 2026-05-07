@@ -206,39 +206,40 @@ export default function NutrientViewer() {
       {/* Toolbar */}
       <header
         style={{
-          background: '#16213e',
+          background: 'rgba(10, 9, 18, 0.92)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           padding: '0.55rem 1.25rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
-          borderBottom: '1px solid #2a4080',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
           flexShrink: 0,
           flexWrap: 'wrap',
         }}
       >
-        <Link to="/" style={{ color: '#7eb8f7', flexShrink: 0 }}>
-          &larr; Back
+        <Link to="/" style={{ color: '#a78bfa', flexShrink: 0, fontSize: '0.875rem', fontWeight: 500 }}>
+          ← Back
         </Link>
-        <h2 style={{ margin: 0, fontSize: '0.9rem', flexShrink: 0, color: '#ccc' }}>
+        <h2 style={{ margin: 0, fontSize: '0.875rem', flexShrink: 0, color: '#a9a7c0', fontWeight: 500 }}>
           Prototype 6 — Nutrient SDK
         </h2>
 
         {pdfName !== 'sample-blueprint.pdf' && (
-          <span style={{ color: '#888', fontSize: '0.82rem' }}>{pdfName}</span>
+          <span style={{ color: '#67647c', fontSize: '0.82rem' }}>{pdfName}</span>
         )}
 
         {documentFormat && (
-          <span
-            style={{
-              background: '#1a3a5c',
-              color: '#7eb8f7',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              padding: '0.18rem 0.5rem',
-              borderRadius: 4,
-              border: '1px solid #2a4080',
-            }}
-          >
+          <span style={{
+            background: 'rgba(139, 92, 246, 0.1)',
+            color: '#a78bfa',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            padding: '0.18rem 0.55rem',
+            borderRadius: 4,
+            border: '1px solid rgba(139, 92, 246, 0.2)',
+            letterSpacing: '0.02em',
+          }}>
             {documentFormat}
           </span>
         )}
@@ -257,11 +258,11 @@ export default function NutrientViewer() {
           Upload PDF
         </button>
 
-        <div style={{ width: 1, height: 24, background: '#2a4080' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
 
         {/* Zoom controls */}
         <button onClick={handleZoomOut} style={btnStyle('#2a4080')} title="Zoom out">
-          &minus;
+          −
         </button>
         <ZoomDisplay instance={instance} />
         <button onClick={handleZoomIn} style={btnStyle('#2a4080')} title="Zoom in">
@@ -274,19 +275,19 @@ export default function NutrientViewer() {
           Fit Page
         </button>
 
-        <div style={{ width: 1, height: 24, background: '#2a4080' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
 
         {/* Add mark toggle */}
         <button
           onClick={() => setIsAdding((v) => !v)}
           style={btnStyle(isAdding ? '#1a6b3a' : '#2a4080', isAdding ? '#4ade80' : undefined)}
         >
-          {isAdding ? 'Adding... (click PDF)' : 'Add Mark'}
+          {isAdding ? 'Adding… (click PDF)' : 'Add Mark'}
         </button>
 
         {userMarks.length > 0 && (
           <>
-            <span style={{ color: '#aaa', fontSize: '0.82rem' }}>
+            <span style={{ color: '#67647c', fontSize: '0.82rem' }}>
               {userMarks.length} user mark{userMarks.length !== 1 ? 's' : ''}
             </span>
             <button onClick={handleClearAll} style={btnStyle('#6b1a1a')}>
@@ -299,12 +300,9 @@ export default function NutrientViewer() {
           Export JSON
         </button>
 
-        <div style={{ width: 1, height: 24, background: '#2a4080' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
 
-        <button
-          onClick={() => setSidebarOpen((v) => !v)}
-          style={btnStyle('#2a4080')}
-        >
+        <button onClick={() => setSidebarOpen((v) => !v)} style={btnStyle('#2a4080')}>
           {sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
         </button>
       </header>
@@ -324,39 +322,45 @@ export default function NutrientViewer() {
 
         {/* Error overlay */}
         {error && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: '#6b1a1a',
-              color: 'white',
-              padding: '1.5rem 2rem',
-              borderRadius: 8,
-              maxWidth: 500,
-              zIndex: 100,
-            }}
-          >
-            <strong>Error loading PDF</strong>
-            <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>{error}</p>
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'rgba(248, 113, 113, 0.08)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(248, 113, 113, 0.2)',
+            color: '#f87171',
+            padding: '1.5rem 2rem',
+            borderRadius: 12,
+            maxWidth: 500,
+            zIndex: 100,
+          }}>
+            <strong style={{ color: '#fca5a5' }}>Error loading PDF</strong>
+            <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#f87171' }}>{error}</p>
           </div>
         )}
 
         {/* Loading overlay */}
         {loading && !error && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              color: '#7eb8f7',
-              fontSize: '1.1rem',
-              zIndex: 100,
-            }}
-          >
-            Loading PDF...
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            color: '#a9a7c0',
+            background: 'rgba(10, 9, 18, 0.82)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.07)',
+            padding: '0.5rem 1.25rem',
+            borderRadius: 8,
+            fontSize: '0.875rem',
+            zIndex: 100,
+            whiteSpace: 'nowrap' as const,
+          }}>
+            Loading PDF…
           </div>
         )}
 
@@ -394,17 +398,14 @@ function ZoomDisplay({ instance }: { instance: InstanceType<typeof NutrientSDK.I
   }, [instance])
 
   return (
-    <span style={{ color: '#e0e0e0', fontSize: '0.82rem', minWidth: 48, textAlign: 'center' }}>
+    <span style={{ color: '#a9a7c0', fontSize: '0.83rem', minWidth: 48, textAlign: 'center' }}>
       {Math.round(zoom * 100)}%
     </span>
   )
 }
 
 function btnStyle(bg: string, color?: string): React.CSSProperties {
-  return {
-    background: bg,
-    color: color ?? 'white',
-    border: '1px solid rgba(255,255,255,0.12)',
+  const base: React.CSSProperties = {
     borderRadius: 5,
     padding: '0.32rem 0.7rem',
     cursor: 'pointer',
@@ -412,4 +413,11 @@ function btnStyle(bg: string, color?: string): React.CSSProperties {
     fontWeight: 500,
     flexShrink: 0,
   }
+  if (bg === '#6b1a1a') {
+    return { ...base, background: 'rgba(248, 113, 113, 0.1)', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.18)' }
+  }
+  if (bg === '#1a6b3a') {
+    return { ...base, background: 'rgba(52, 211, 153, 0.12)', color: color ?? '#34d399', border: '1px solid rgba(52, 211, 153, 0.2)' }
+  }
+  return { ...base, background: 'rgba(139, 92, 246, 0.1)', color: color ?? '#a78bfa', border: '1px solid rgba(139, 92, 246, 0.2)' }
 }
