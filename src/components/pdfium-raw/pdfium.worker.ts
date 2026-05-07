@@ -77,7 +77,7 @@ self.onmessage = async (e: MessageEvent) => {
           result.data.byteOffset + result.data.byteLength,
         )
 
-        self.postMessage(
+        ;(self as unknown as Worker).postMessage(
           {
             type: 'renderDone',
             id,
@@ -86,7 +86,7 @@ self.onmessage = async (e: MessageEvent) => {
             height: result.height,
             renderScale,
           },
-          [buf], // transfer (zero-copy)
+          [buf],
         )
       } catch (err) {
         self.postMessage({ type: 'renderDone', id: msg.id, error: `${err}` })

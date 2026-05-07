@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import NutrientViewer from '@nutrient-sdk/viewer'
 import { detectPageFormat, optimalTileSize } from './pageFormats'
 
-NutrientViewer.preloadWorker({ useCDN: true })
+NutrientViewer.preloadWorker({ document: '', useCDN: true })
 
 interface PageGeometry {
   widthPt: number
@@ -50,14 +50,6 @@ export function useNutrientInstance(
           licenseKey: licenseKey || undefined,
           useCDN: true,
           autoSaveMode: NutrientViewer.AutoSaveMode.DISABLED,
-          zoom: {
-            zoomMode: NutrientViewer.ZoomMode.FIT_TO_WIDTH,
-            wheelZoomMode: NutrientViewer.WheelZoomMode.WITH_CTRL,
-            options: {
-              enableKeyboardZoom: true,
-              enableGestureZoom: true,
-            },
-          },
           styleSheets: ['/nutrient-perf.css'],
           tileSize: 2048,
         })
@@ -95,14 +87,6 @@ export function useNutrientInstance(
             licenseKey: licenseKey || undefined,
             useCDN: true,
             autoSaveMode: NutrientViewer.AutoSaveMode.DISABLED,
-            zoom: {
-              zoomMode: NutrientViewer.ZoomMode.FIT_TO_WIDTH,
-              wheelZoomMode: NutrientViewer.WheelZoomMode.WITH_CTRL,
-              options: {
-                enableKeyboardZoom: true,
-                enableGestureZoom: true,
-              },
-            },
             styleSheets: ['/nutrient-perf.css'],
             tileSize: needed,
           })
@@ -113,12 +97,12 @@ export function useNutrientInstance(
           }
 
           reinstated.setViewState((v) =>
-            v.set('zoomStep', 1.1).set('prerenderedPageSpreads', 3),
+            v.set('zoomStep', 1.1).set('prerenderedPageSpreads', 3).set('zoom', NutrientViewer.ZoomMode.FIT_TO_WIDTH),
           )
           setInstance(reinstated)
         } else {
           inst.setViewState((v) =>
-            v.set('zoomStep', 1.1).set('prerenderedPageSpreads', 3),
+            v.set('zoomStep', 1.1).set('prerenderedPageSpreads', 3).set('zoom', NutrientViewer.ZoomMode.FIT_TO_WIDTH),
           )
           setInstance(inst)
         }

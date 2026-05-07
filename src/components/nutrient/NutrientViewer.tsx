@@ -24,7 +24,7 @@ export default function NutrientViewer() {
   const [isAdding, setIsAdding] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  const { instance, loading, error, pageCount, getPageHeight, getPageFormat, documentFormat } =
+  const { instance, loading, error, getPageHeight, documentFormat } =
     useNutrientInstance(containerRef, pdfUrl, LICENSE_KEY)
 
   const handleZoomIn = useCallback(() => {
