@@ -7,7 +7,7 @@ import { pdfYToNutrient, nutrientYToPdf } from './coordConversion'
 import MarksSidebar from './MarksSidebar'
 import type { PdfMark } from '../../types/marks'
 
-const DEFAULT_PDF = '/sample-blueprint.pdf'
+const DEFAULT_PDF = `${import.meta.env.BASE_URL}sample-blueprint.pdf`
 const MARK_SIZE = 24
 
 const LICENSE_KEY = typeof import.meta !== 'undefined'

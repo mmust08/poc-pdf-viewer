@@ -17,7 +17,7 @@ export default function EmbedPdfPrototype() {
   const plugins = useMemo(
     () => [
       createPluginRegistration(DocumentManagerPluginPackage, {
-        initialDocuments: [{ url: '/sample-blueprint.pdf' }],
+        initialDocuments: [{ url: `${import.meta.env.BASE_URL}sample-blueprint.pdf` }],
       }),
       createPluginRegistration(ViewportPluginPackage),
       createPluginRegistration(ScrollPluginPackage),

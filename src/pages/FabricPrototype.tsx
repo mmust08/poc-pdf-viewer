@@ -4,7 +4,7 @@ import FabricViewer from '../components/fabric/FabricViewer'
 import { useMarks } from '../hooks/useMarks'
 
 export default function FabricPrototype() {
-  const [pdfUrl, setPdfUrl] = useState('/sample-blueprint.pdf')
+  const [pdfUrl, setPdfUrl] = useState(`${import.meta.env.BASE_URL}sample-blueprint.pdf`)
   const [pdfName, setPdfName] = useState('sample-blueprint.pdf')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageCount, setPageCount] = useState(1)

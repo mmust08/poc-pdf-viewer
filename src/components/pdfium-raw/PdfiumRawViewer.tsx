@@ -46,7 +46,7 @@ export default function PdfiumRawViewer() {
   const { requestRender, loading, error, rendering, loadBuffer, retry } = useWorker({
     createWorker: () => new Worker(new URL('./pdfium.worker.ts', import.meta.url), { type: 'module' }),
     onDocumentLoaded,
-    defaultUrl: `${window.location.origin}/sample-blueprint.pdf`,
+    defaultUrl: `${window.location.origin}${import.meta.env.BASE_URL}sample-blueprint.pdf`,
   })
 
   const { userMarks, addMark, clearMarks, restoreMarks, saveAndReset, getMarksForPage } =

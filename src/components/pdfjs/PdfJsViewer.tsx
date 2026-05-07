@@ -47,7 +47,7 @@ export default function PdfJsViewer() {
 
   const [isPanning, setIsPanning] = useState(false)
 
-  const [pdfUrl, setPdfUrl] = useState('/sample-blueprint.pdf')
+  const [pdfUrl, setPdfUrl] = useState(`${import.meta.env.BASE_URL}sample-blueprint.pdf`)
   const [pdfName, setPdfName] = useState('sample-blueprint.pdf')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pdfDoc, setPdfDoc] = useState<any>(null)
