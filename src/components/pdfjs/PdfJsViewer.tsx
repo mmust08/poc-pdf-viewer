@@ -86,9 +86,7 @@ export default function PdfJsViewer() {
   const [pageGeometries, setPageGeometries] = useState<PageGeometry[]>([])
   const [scale, setScale] = useState(1)
   const [zoomMode, setZoomMode] = useState<ZoomMode>('page-width')
-  const [zoomInputValue, setZoomInputValue] = useState('100')
-  const [zoomInputFocused, setZoomInputFocused] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
+const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [scrollVersion, setScrollVersion] = useState(0)
 
@@ -166,14 +164,7 @@ export default function PdfJsViewer() {
     container.scrollTop = pending.pdfY * scale - anchorY
   }, [scale])
 
-  // ── Sync zoom input display with scale (when not focused) ────────────
-  useEffect(() => {
-    if (!zoomInputFocused) {
-      setZoomInputValue(String(Math.round(scale * 100)))
-    }
-  }, [scale, zoomInputFocused])
-
-  // ── Ctrl+wheel / pinch zoom ──────────────────────────────────────────
+// ── Ctrl+wheel / pinch zoom ──────────────────────────────────────────
   // Scale is read via a ref so we attach the listener once (non-passive to
   // preventDefault) without re-creating it on every scale change.
   const wheelScaleRef = useRef(scale)
@@ -363,30 +354,7 @@ export default function PdfJsViewer() {
     applyZoomMode(newMode)
   }
 
-  function commitZoomInput() {
-    const parsed = parseInt(zoomInputValue, 10)
-    const minPct = Math.round(MIN_SCALE * 100)
-    const maxPct = Math.round(MAX_SCALE * 100)
-    if (!isNaN(parsed) && parsed >= minPct && parsed <= maxPct) {
-      const newScale = parsed / 100
-      const container = containerRef.current
-      if (container) {
-        pendingZoomRef.current = {
-          pdfX: (container.scrollLeft + container.clientWidth / 2) / scale,
-          pdfY: (container.scrollTop + container.clientHeight / 2) / scale,
-          newScale,
-        }
-      }
-      setScale(newScale)
-      setZoomMode('custom')
-      zoomModeRef.current = 'custom'
-    } else {
-      setZoomInputValue(String(Math.round(scale * 100)))
-    }
-    setZoomInputFocused(false)
-  }
-
-  // ── Zoom handler (button zoom — centres on viewport) ─────────────────
+// ── Zoom handler (button zoom — centres on viewport) ─────────────────
   function handleZoom(direction: 'in' | 'out') {
     const container = containerRef.current
     if (!container) return
@@ -495,36 +463,6 @@ export default function PdfJsViewer() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
           <button onClick={() => handleZoom('out')} style={btnStyle} title="Zoom out (Ctrl+−)">−</button>
 
-          <input
-            type="text"
-            value={zoomInputValue}
-            onFocus={(e) => { setZoomInputFocused(true); e.target.select() }}
-            onBlur={commitZoomInput}
-            onChange={(e) => setZoomInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') { commitZoomInput(); (e.target as HTMLInputElement).blur() }
-              if (e.key === 'Escape') {
-                setZoomInputValue(String(Math.round(scale * 100)))
-                setZoomInputFocused(false);
-                (e.target as HTMLInputElement).blur()
-              }
-            }}
-            style={{
-              width: 40, textAlign: 'right',
-              background: 'rgba(139, 92, 246, 0.08)', color: '#a9a7c0',
-              border: '1px solid rgba(139, 92, 246, 0.2)', borderRight: 'none',
-              borderRadius: '5px 0 0 5px', padding: '0.32rem 0.3rem 0.32rem 0.4rem',
-              fontSize: '0.83rem', outline: 'none',
-            }}
-            title="Zoom level — type a value and press Enter"
-          />
-          <span style={{
-            background: 'rgba(139, 92, 246, 0.08)', color: '#a9a7c0',
-            border: '1px solid rgba(139, 92, 246, 0.2)', borderLeft: 'none', borderRight: 'none',
-            padding: '0.32rem 0.2rem 0.32rem 0',
-            fontSize: '0.83rem', lineHeight: '1.2', userSelect: 'none',
-          }}>%</span>
-
           <select
             value={zoomMode === 'custom' ? '__custom__' : zoomMode}
             onChange={(e) => {
@@ -551,7 +489,7 @@ export default function PdfJsViewer() {
             style={{
               background: 'rgba(139, 92, 246, 0.1)', color: '#a9a7c0',
               border: '1px solid rgba(139, 92, 246, 0.2)',
-              borderRadius: '0 5px 5px 0', padding: '0.32rem 0.3rem 0.32rem 0.2rem',
+              borderRadius: '5px', padding: '0.32rem 0.5rem',
               fontSize: '0.83rem', cursor: 'pointer', outline: 'none',
             }}
             title="Zoom preset"
