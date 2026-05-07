@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { ThemeToggle } from '../ThemeToggle'
 import NutrientSDK from '@nutrient-sdk/viewer'
 import { useNutrientInstance } from './useNutrientInstance'
 import { useMarks } from './useMarks'
@@ -206,15 +207,15 @@ export default function NutrientViewer() {
       {/* Toolbar */}
       <header
         style={{
-          background: 'rgba(255, 255, 255, 0.82)',
+          background: 'var(--clr-toolbar-bg)',
           backdropFilter: 'blur(20px) saturate(160%)',
           WebkitBackdropFilter: 'blur(20px) saturate(160%)',
           padding: '0.55rem 1.25rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.07)',
-          boxShadow: 'inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 1px 8px rgba(0, 0, 0, 0.05)',
+          borderBottom: '1px solid var(--clr-toolbar-border)',
+          boxShadow: 'var(--clr-toolbar-shadow)',
           flexShrink: 0,
           flexWrap: 'wrap',
         }}
@@ -259,7 +260,7 @@ export default function NutrientViewer() {
           Upload PDF
         </button>
 
-        <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
+        <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
 
         {/* Zoom controls */}
         <button onClick={handleZoomOut} style={btnStyle('#2a4080')} title="Zoom out">
@@ -276,7 +277,7 @@ export default function NutrientViewer() {
           Fit Page
         </button>
 
-        <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
+        <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
 
         {/* Add mark toggle */}
         <button
@@ -301,11 +302,13 @@ export default function NutrientViewer() {
           Export JSON
         </button>
 
-        <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
+        <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
 
         <button onClick={() => setSidebarOpen((v) => !v)} style={btnStyle('#2a4080')}>
           {sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
         </button>
+
+        <ThemeToggle />
       </header>
 
       {/* Main content */}
@@ -351,10 +354,10 @@ export default function NutrientViewer() {
             left: '50%',
             transform: 'translate(-50%, -50%)',
             color: 'var(--clr-text-secondary)',
-            background: 'rgba(255, 255, 255, 0.82)',
+            background: 'var(--clr-toolbar-bg)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
-            border: '1px solid rgba(0, 0, 0, 0.07)',
+            border: '1px solid var(--clr-toolbar-border)',
             padding: '0.5rem 1.25rem',
             borderRadius: 8,
             fontSize: '0.875rem',

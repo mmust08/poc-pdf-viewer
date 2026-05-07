@@ -42,6 +42,85 @@
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 20px;
+
+  /* Toolbar / viewer chrome */
+  --clr-toolbar-bg: rgba(255, 255, 255, 0.82);
+  --clr-toolbar-border: rgba(0, 0, 0, 0.07);
+  --clr-toolbar-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 1px 8px rgba(0, 0, 0, 0.05);
+  --clr-divider: rgba(0, 0, 0, 0.09);
+  --clr-canvas-bg: #D6D2CA;
+  --clr-inset-surface: rgba(255, 255, 255, 0.45);
+}
+
+/* ── Dark mode — glassmorphism ──────────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Deep dark base — cool near-black so colored blobs read through glass */
+  --clr-bg: #0D0F14;
+
+  /* True glass: very low opacity so the vivid background bleeds through */
+  --clr-surface: rgba(255, 255, 255, 0.07);
+  --clr-surface-hover: rgba(255, 255, 255, 0.11);
+  --clr-surface-strong: rgba(255, 255, 255, 0.16);
+
+  /* Glass edges — bright top-highlight + subtle border */
+  --clr-border: rgba(255, 255, 255, 0.13);
+  --clr-border-secondary: rgba(255, 255, 255, 0.07);
+  --clr-border-hover: rgba(114, 166, 190, 0.55);
+
+  /* Accent — slightly more vivid on dark */
+  --clr-accent-300: #BBDAEC;
+  --clr-accent-400: #8FC0D8;
+  --clr-accent-500: #6AAAC4;
+
+  /* Text */
+  --clr-text-primary: #F0EDE8;
+  --clr-text-secondary: #B0AAA2;
+  --clr-text-muted: #72695F;
+
+  /* Deeper shadows — glass depth + subtle glow */
+  --shadow-card:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 4px 24px rgba(0, 0, 0, 0.50),
+    0 1px 4px rgba(0, 0, 0, 0.30);
+  --shadow-card-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 14px 44px rgba(0, 0, 0, 0.65),
+    0 3px 10px rgba(0, 0, 0, 0.35);
+
+  /* Frosted-glass toolbar — near-transparent with blur doing the heavy lifting */
+  --clr-toolbar-bg: rgba(255, 255, 255, 0.06);
+  --clr-toolbar-border: rgba(255, 255, 255, 0.10);
+  --clr-toolbar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 1px 20px rgba(0, 0, 0, 0.40);
+  --clr-divider: rgba(255, 255, 255, 0.10);
+  --clr-canvas-bg: #080A0E;
+  --clr-inset-surface: rgba(255, 255, 255, 0.05);
+}
+
+/* Vivid colored blobs that glow through the glass surfaces */
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(ellipse 75% 65% at 5% -5%,  rgba(52, 104, 140, 0.60) 0%, transparent 58%),
+    radial-gradient(ellipse 65% 55% at 95% 105%, rgba(72, 48, 110, 0.50) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 38% at 55% 48%,  rgba(30, 68, 90,  0.32) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 30% at 20% 80%,  rgba(40, 80, 60,  0.22) 0%, transparent 55%);
+}
+/* ────────────────────────────────────────────────────────────────────────── */
+
+/* Smooth cross-fade when switching themes — class is added for 500ms only */
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition:
+    background-color 0.45s ease,
+    background 0.45s ease,
+    color 0.35s ease,
+    border-color 0.40s ease,
+    box-shadow 0.45s ease,
+    fill 0.35s ease,
+    stroke 0.35s ease !important;
+  transition-delay: 0s !important;
 }
 
 html, body, #root {

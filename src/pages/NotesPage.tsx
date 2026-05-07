@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { ThemeToggle } from '../components/ThemeToggle'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
@@ -173,7 +174,7 @@ const components: Components = {
   ),
   li: ({ children }) => <li style={{ marginBottom: '0.25rem' }}>{children}</li>,
   hr: () => (
-    <hr style={{ border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.07)', margin: '1.5rem 0' }} />
+    <hr style={{ border: 'none', borderTop: '1px solid var(--clr-border-secondary)', margin: '1.5rem 0' }} />
   ),
   strong: ({ children }) => (
     <strong style={{ color: 'var(--clr-text-primary)', fontWeight: 600 }}>{children}</strong>
@@ -215,26 +216,28 @@ export default function NotesPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '3rem 2rem' }}>
-        <Link
-          to="/"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            marginBottom: '2rem',
-            color: 'var(--clr-text-muted)',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            transition: 'color 0.15s ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-muted)' }}
-        >
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-            <path d="M12 7.5H3M6.5 4L3 7.5L6.5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Back
-        </Link>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              color: 'var(--clr-text-muted)',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-muted)' }}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M12 7.5H3M6.5 4L3 7.5L6.5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Back
+          </Link>
+          <ThemeToggle />
+        </div>
 
         {loading && (
           <p style={{ color: 'var(--clr-text-muted)', marginTop: '2rem', fontSize: '0.9rem' }}>

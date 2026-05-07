@@ -14,17 +14,17 @@ export default memo(function MarksSidebar({ marks, onNavigate, onDelete }: Props
     <div style={{
       width: 280,
       flexShrink: 0,
-      background: 'rgba(255, 255, 255, 0.82)',
+      background: 'var(--clr-toolbar-bg)',
       backdropFilter: 'blur(20px) saturate(160%)',
       WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-      borderLeft: '1px solid rgba(0, 0, 0, 0.07)',
+      borderLeft: '1px solid var(--clr-toolbar-border)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
     }}>
       <div style={{
         padding: '0.75rem 1rem',
-        borderBottom: '1px solid rgba(0, 0, 0, 0.07)',
+        borderBottom: '1px solid var(--clr-toolbar-border)',
         fontSize: '0.82rem',
         fontWeight: 600,
         color: 'var(--clr-text-secondary)',

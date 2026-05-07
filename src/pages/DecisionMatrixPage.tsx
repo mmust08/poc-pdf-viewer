@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 const printStyles = `
   @media print {
@@ -105,27 +106,29 @@ export default function DecisionMatrixPage() {
       <style>{printStyles}</style>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '3rem 2rem' }}>
 
-        {/* Back link */}
-        <Link
-          to="/"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            marginBottom: '2rem',
-            color: 'var(--clr-text-muted)',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            transition: 'color 0.15s ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-muted)' }}
-        >
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-            <path d="M12 7.5H3M6.5 4L3 7.5L6.5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Back to Landing
-        </Link>
+        {/* Back link + theme toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              color: 'var(--clr-text-muted)',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-muted)' }}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M12 7.5H3M6.5 4L3 7.5L6.5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Back to Landing
+          </Link>
+          <ThemeToggle />
+        </div>
 
         {/* Header */}
         <div style={{ marginBottom: '2.5rem' }}>
@@ -217,7 +220,7 @@ export default function DecisionMatrixPage() {
                     <div
                       key={p.id}
                       style={{
-                        background: 'rgba(255, 255, 255, 0.45)',
+                        background: 'var(--clr-inset-surface)',
                         border: `1px solid ${p.color}28`,
                         borderRadius: 'var(--radius-md)',
                         padding: '1rem',

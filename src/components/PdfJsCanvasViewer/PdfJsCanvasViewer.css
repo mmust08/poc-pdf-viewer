@@ -3,28 +3,28 @@
     inset: 0;
     display: flex;
     flex-direction: column;
-    background: #D6D2CA;
-    color: #1C1A17;
+    background: var(--clr-canvas-bg);
+    color: var(--clr-text-primary);
     font-family: 'Manrope', system-ui, -apple-system, sans-serif;
 }
 
 .pdfjs-header {
-    background: rgba(255, 255, 255, 0.82);
+    background: var(--clr-toolbar-bg);
     backdrop-filter: blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     padding: 0.55rem 1.25rem;
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 1px 8px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--clr-toolbar-border);
+    box-shadow: var(--clr-toolbar-shadow);
     flex-shrink: 0;
     flex-wrap: wrap;
     z-index: 1;
 }
 
 .pdfjs-back-link {
-    color: #4E6E7E;
+    color: var(--clr-accent-500);
     flex-shrink: 0;
     text-decoration: none;
     font-size: 0.875rem;
@@ -34,19 +34,19 @@
 }
 
 .pdfjs-back-link:hover {
-    color: #6D90A2;
+    color: var(--clr-accent-400);
 }
 
 .pdfjs-title {
     margin: 0;
     font-size: 0.875rem;
     flex-shrink: 0;
-    color: #5C5753;
+    color: var(--clr-text-secondary);
     font-weight: 500;
 }
 
 .pdfjs-page-count {
-    color: #9E9A95;
+    color: var(--clr-text-muted);
     font-size: 0.82rem;
     flex-shrink: 0;
 }
@@ -54,7 +54,7 @@
 .pdfjs-divider {
     width: 1px;
     height: 20px;
-    background: rgba(0, 0, 0, 0.09);
+    background: var(--clr-divider);
     flex-shrink: 0;
 }
 
@@ -66,7 +66,7 @@
 }
 
 .pdfjs-zoom-value {
-    color: #5C5753;
+    color: var(--clr-text-secondary);
     font-size: 0.83rem;
     min-width: 45px;
     text-align: center;
@@ -77,19 +77,19 @@
 }
 
 .pdfjs-marks-count {
-    color: #9E9A95;
+    color: var(--clr-text-muted);
     font-size: 0.82rem;
 }
 
 .pdfjs-hint {
-    color: #B0ACA7;
+    color: var(--clr-text-muted);
     font-size: 0.78rem;
     flex-shrink: 0;
 }
 
 .pdfjs-header button {
     background: rgba(78, 110, 126, 0.08);
-    color: #4E6E7E;
+    color: var(--clr-accent-500);
     border: 1px solid rgba(78, 110, 126, 0.18);
     border-radius: 5px;
     padding: 0.32rem 0.7rem;
@@ -104,7 +104,7 @@
 .pdfjs-header button:hover:not(:disabled) {
     background: rgba(78, 110, 126, 0.14);
     border-color: rgba(78, 110, 126, 0.32);
-    color: #3A5868;
+    color: var(--clr-accent-400);
 }
 
 .pdfjs-header button:disabled {
@@ -124,12 +124,20 @@
     color: #7D3535 !important;
 }
 
+[data-theme="dark"] .pdfjs-clear-btn {
+    color: #C47070 !important;
+}
+
+[data-theme="dark"] .pdfjs-clear-btn:hover:not(:disabled) {
+    color: #D98080 !important;
+}
+
 .pdfjs-canvas-scroll {
     flex: 1;
     overflow: auto;
     position: relative;
     user-select: none;
-    background: #D6D2CA;
+    background: var(--clr-canvas-bg);
 }
 
 .pdfjs-canvas-scroll.panning {
@@ -186,12 +194,12 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: #5C5753;
-    background: rgba(255, 255, 255, 0.82);
+    color: var(--clr-text-secondary);
+    background: var(--clr-toolbar-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 0, 0, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--clr-toolbar-border);
+    box-shadow: var(--shadow-card);
     padding: 0.5rem 1.25rem;
     border-radius: 8px;
     font-size: 0.875rem;
@@ -204,6 +212,12 @@
     border-color: rgba(160, 60, 60, 0.18);
 }
 
+[data-theme="dark"] .pdfjs-error {
+    color: #C47070;
+    background: rgba(160, 60, 60, 0.10);
+    border-color: rgba(160, 60, 60, 0.25);
+}
+
 .pdfjs-render-status {
     position: absolute;
     top: 50%;
@@ -212,12 +226,12 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.82);
+    background: var(--clr-toolbar-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 0, 0, 0.07);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 16px rgba(0, 0, 0, 0.08);
-    color: #5C5753;
+    border: 1px solid var(--clr-toolbar-border);
+    box-shadow: var(--shadow-card);
+    color: var(--clr-text-secondary);
     padding: 0.5rem 1.1rem;
     border-radius: 999px;
     font-size: 0.82rem;
@@ -229,7 +243,7 @@
     width: 13px;
     height: 13px;
     border: 1.5px solid rgba(78, 110, 126, 0.18);
-    border-top-color: #4E6E7E;
+    border-top-color: var(--clr-accent-500);
     border-radius: 50%;
     animation: pdfjs-spin 0.75s linear infinite;
     flex-shrink: 0;

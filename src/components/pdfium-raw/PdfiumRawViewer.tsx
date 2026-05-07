@@ -109,7 +109,7 @@ export default function PdfiumRawViewer() {
         style={{
           flex: 1,
           overflow: 'auto',
-          background: '#3c3a48',
+          background: 'var(--clr-canvas-bg)',
           padding: '8px 0',
           position: 'relative',
           cursor: isPanning ? 'grabbing' : 'grab',
@@ -122,7 +122,7 @@ export default function PdfiumRawViewer() {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%,-50%)',
-              color: error ? '#ff6b6b' : 'white',
+              color: error ? '#C47070' : 'var(--clr-text-secondary)',
               zIndex: 10,
               textAlign: 'center',
             }}
@@ -135,8 +135,8 @@ export default function PdfiumRawViewer() {
                   style={{
                     marginTop: 12,
                     padding: '8px 20px',
-                    background: '#ff6b6b',
-                    color: 'white',
+                    background: 'rgba(160, 60, 60, 0.12)',
+                    color: '#C47070',
                     border: 'none',
                     borderRadius: 4,
                     cursor: 'pointer',

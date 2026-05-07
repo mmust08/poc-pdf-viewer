@@ -1,4 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { ThemeToggle } from '../components/ThemeToggle'
+import { useTheme } from '../hooks/useTheme'
 
 const prototypes = [
   {
@@ -80,12 +82,22 @@ function parsePrototypeName(name: string): { label: string; title: string } {
 }
 
 function DifficultyBadge({ level }: { level: string }) {
+  const { isDark } = useTheme()
+
   const getColors = (l: string): { bg: string; color: string } => {
-    if (l === 'Low') return { bg: 'rgba(60, 130, 90, 0.10)', color: '#3C7A58' }
-    if (l === 'Medium') return { bg: 'rgba(155, 120, 50, 0.10)', color: '#8A6B2A' }
+    if (isDark) {
+      if (l === 'Low')         return { bg: 'rgba(52, 160, 90,  0.16)', color: '#5CC87A' }
+      if (l === 'Medium')      return { bg: 'rgba(190, 148, 42, 0.16)', color: '#D4A848' }
+      if (l === 'Medium-High') return { bg: 'rgba(200, 110, 42, 0.16)', color: '#D88848' }
+      if (l === 'High')        return { bg: 'rgba(195, 62,  62, 0.16)', color: '#D46868' }
+      if (l === 'Hard')        return { bg: 'rgba(178, 48,  48, 0.18)', color: '#C45252' }
+      return { bg: 'rgba(106, 170, 196, 0.14)', color: '#6AAAC4' }
+    }
+    if (l === 'Low')         return { bg: 'rgba(60, 130, 90,  0.10)', color: '#3C7A58' }
+    if (l === 'Medium')      return { bg: 'rgba(155, 120, 50, 0.10)', color: '#8A6B2A' }
     if (l === 'Medium-High') return { bg: 'rgba(170, 100, 50, 0.10)', color: '#9A5E32' }
-    if (l === 'High') return { bg: 'rgba(160, 60, 60, 0.10)', color: '#9A4A4A' }
-    if (l === 'Hard') return { bg: 'rgba(150, 50, 50, 0.12)', color: '#8A3838' }
+    if (l === 'High')        return { bg: 'rgba(160, 60,  60, 0.10)', color: '#9A4A4A' }
+    if (l === 'Hard')        return { bg: 'rgba(150, 50,  50, 0.12)', color: '#8A3838' }
     return { bg: 'rgba(78, 110, 126, 0.10)', color: '#4E6E7E' }
   }
   const { bg, color } = getColors(level)
@@ -112,21 +124,23 @@ export default function LandingPage() {
     <div style={{ maxWidth: 880, margin: '0 auto', padding: '3rem 2rem' }}>
       {/* Header */}
       <div style={{ marginBottom: '3rem' }}>
-        <span style={{
-          display: 'inline-block',
-          padding: '3px 10px',
-          borderRadius: 6,
-          background: 'rgba(78, 110, 126, 0.09)',
-          border: '1px solid rgba(78, 110, 126, 0.22)',
-          color: 'var(--clr-accent-500)',
-          fontSize: '0.7rem',
-          fontWeight: 700,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase' as const,
-          marginBottom: '1rem',
-        }}>
-          AJB-14023
-        </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <span style={{
+            display: 'inline-block',
+            padding: '3px 10px',
+            borderRadius: 6,
+            background: 'rgba(78, 110, 126, 0.09)',
+            border: '1px solid rgba(78, 110, 126, 0.22)',
+            color: 'var(--clr-accent-500)',
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase' as const,
+          }}>
+            AJB-14023
+          </span>
+          <ThemeToggle />
+        </div>
 
         <h1 style={{
           margin: '0 0 0.75rem',

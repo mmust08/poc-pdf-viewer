@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { MAX_NORMALIZED } from './zoomUtils'
+import { ThemeToggle } from '../ThemeToggle'
 
 const btnStyle: React.CSSProperties = {
   background: 'rgba(78, 110, 126, 0.08)',
@@ -50,15 +51,15 @@ export function PdfiumToolbar({
       `}</style>}
       <header
         style={{
-          background: 'rgba(255, 255, 255, 0.82)',
+          background: 'var(--clr-toolbar-bg)',
           backdropFilter: 'blur(20px) saturate(160%)',
           WebkitBackdropFilter: 'blur(20px) saturate(160%)',
           padding: '0.55rem 1.25rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.07)',
-          boxShadow: 'inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 1px 8px rgba(0, 0, 0, 0.05)',
+          borderBottom: '1px solid var(--clr-toolbar-border)',
+          boxShadow: 'var(--clr-toolbar-shadow)',
           flexShrink: 0,
           flexWrap: 'wrap',
         }}
@@ -77,7 +78,7 @@ export function PdfiumToolbar({
           </span>
         )}
 
-        <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
+        <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
           <button onClick={() => onZoom('out')} style={btnStyle} title="Zoom out">
@@ -91,7 +92,7 @@ export function PdfiumToolbar({
           </button>
         </div>
 
-        <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
+        <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
 
         <button onClick={onUploadClick} style={btnStyle} title="Upload a PDF">
           Upload PDF
@@ -99,7 +100,7 @@ export function PdfiumToolbar({
 
         {userMarkCount > 0 && (
           <>
-            <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
+            <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
             <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.82rem' }}>
               {userMarkCount} user mark{userMarkCount !== 1 ? 's' : ''}
             </span>
@@ -108,6 +109,8 @@ export function PdfiumToolbar({
             </button>
           </>
         )}
+
+        <ThemeToggle />
 
         <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.78rem', flexShrink: 0 }}>
           Click to place mark · Drag to pan · Ctrl+wheel to zoom · Max {MAX_NORMALIZED}%
