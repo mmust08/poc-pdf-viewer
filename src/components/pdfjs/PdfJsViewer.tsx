@@ -304,7 +304,7 @@ export default function PdfJsViewer() {
           ← Back
         </Link>
         <h2 style={{ margin: 0, fontSize: '0.9rem', flexShrink: 0, color: '#ccc' }}>
-          Prototype 1 — PDF.js · {pdfName}
+          Prototype 1.1 — PDF.js · {pdfName}
         </h2>
         <div style={{ flex: 1 }} />
 

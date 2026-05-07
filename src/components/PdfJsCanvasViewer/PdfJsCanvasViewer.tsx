@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { Link } from "react-router-dom"
 import * as pdfjsLib from "pdfjs-dist"
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist"
 import type { PdfMark } from "../../types/marks"
@@ -53,6 +54,13 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
 
     const { marks, selectedId, addMark, moveMark, selectMark, toggleSelectMark, clearMarks } =
         useCanvasMarks("pdfjs-canvas-marks")
+
+    // Extract filename from URL
+    const getPdfFileName = (url: string) => {
+        const parts = url.split('/')
+        return parts[parts.length - 1] || 'sample-blueprint.pdf'
+    }
+    const pdfFileName = getPdfFileName(pdfUrl)
 
     // Load PDF once
     useEffect(() => {
@@ -433,26 +441,54 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
 
     return (
         <div className="pdfjs-wrapper">
-            <div className="pdfjs-toolbar">
-                <button onClick={() => setScale((s) => Math.max(MIN_SCALE, s / 1.25))}>−</button>
-                <span>{Math.round(scale * 100)}%</span>
-                <button onClick={() => setScale((s) => Math.min(MAX_SCALE, s * 1.25))}>+</button>
-                <button onClick={() => setScale(1.5)}>Reset</button>
-                <button className="pdfjs-btn-danger" onClick={clearMarks} disabled={marks.length === 0}>Clear all</button>
+            <header className="pdfjs-header">
+                <Link to="/" className="pdfjs-back-link">← Back</Link>
+                <h2 className="pdfjs-title">Prototype 1.2 — PDF.js Canvas · {pdfFileName}</h2>
+                <div style={{ flex: 1 }} />
+
+                <span className="pdfjs-page-count">Page 1 / 1</span>
+
+                <div className="pdfjs-divider" />
+
+                <div className="pdfjs-zoom-controls">
+                    <button onClick={() => setScale((s) => Math.max(MIN_SCALE, s / 1.25))} title="Zoom out">−</button>
+                    <span className="pdfjs-zoom-value">{Math.round(scale * 100)}%</span>
+                    <button onClick={() => setScale((s) => Math.min(MAX_SCALE, s * 1.25))} title="Zoom in">+</button>
+                </div>
+
+                <div className="pdfjs-divider" />
+
                 <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf"
+                    accept=".pdf,application/pdf"
                     onChange={handleFileUpload}
                     style={{ display: 'none' }}
                 />
-                <button onClick={() => fileInputRef.current?.click()} style={{ marginLeft: 'auto' }}>
-                    📤 Upload PDF
+                <button onClick={() => fileInputRef.current?.click()} className="pdfjs-upload-btn" title="Upload a PDF">
+                    Upload PDF
                 </button>
-                <span className="hint">
-                    Left-click = place / select · drag mark = move · right-click drag = pan · ctrl+scroll = zoom
+
+                {marks.length > 0 && (
+                    <>
+                        <div className="pdfjs-divider" />
+                        <span className="pdfjs-marks-count">
+                            {marks.length} user mark{marks.length !== 1 ? 's' : ''}
+                        </span>
+                        <button
+                            onClick={clearMarks}
+                            className="pdfjs-clear-btn"
+                            title="Remove all user marks"
+                        >
+                            Clear all
+                        </button>
+                    </>
+                )}
+
+                <span className="pdfjs-hint">
+                    Click to place mark · Drag to pan · Ctrl+wheel to zoom
                 </span>
-            </div>
+            </header>
 
             <div ref={scrollRef} className="pdfjs-canvas-scroll">
                 <div className="pdfjs-page" style={{ width: canvasW, height: canvasH }}>
