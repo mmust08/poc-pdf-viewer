@@ -209,7 +209,6 @@ const [currentPage, setCurrentPage] = useState(1)
       wheelZoomAccumRef.current += e.deltaY
       if (Math.abs(wheelZoomAccumRef.current) < ZOOM_WHEEL_THRESHOLD) return
       const direction = wheelZoomAccumRef.current > 0 ? 1 : -1
-      wheelZoomAccumRef.current -= direction * ZOOM_WHEEL_THRESHOLD
 
       const oldScale = wheelScaleRef.current
       let newScale: number
@@ -219,7 +218,16 @@ const [currentPage, setCurrentPage] = useState(1)
         newScale = [...ZOOM_STEPS].reverse().find((s) => s < oldScale - 1e-9) ?? MIN_SCALE
       }
       newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale))
-      if (newScale === oldScale) return
+      if (newScale === oldScale) {
+        // At zoom limit — reset so reversing direction responds immediately
+        wheelZoomAccumRef.current = 0
+        return
+      }
+      // Consume one threshold unit; clamp carry so large smooth-scroll deltas
+      // can't build up enough carry to cause reversed zoom on direction change.
+      wheelZoomAccumRef.current -= direction * ZOOM_WHEEL_THRESHOLD
+      wheelZoomAccumRef.current = Math.sign(wheelZoomAccumRef.current)
+        * Math.min(Math.abs(wheelZoomAccumRef.current), ZOOM_WHEEL_THRESHOLD - 1)
 
       const rect = container.getBoundingClientRect()
       const pointerViewportX = e.clientX - rect.left
