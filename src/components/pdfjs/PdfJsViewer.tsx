@@ -455,36 +455,78 @@ const [currentPage, setCurrentPage] = useState(1)
       <header
         style={{
           background: 'var(--clr-toolbar-bg)',
-          backdropFilter: 'blur(20px) saturate(160%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-          padding: '0.55rem 1.25rem',
+          backdropFilter: 'blur(16px) saturate(110%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(110%)',
+          height: '48px',
+          minHeight: '48px',
+          padding: '0 1.25rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.65rem',
+          gap: '0.5rem',
           borderBottom: '1px solid var(--clr-toolbar-border)',
           boxShadow: 'var(--clr-toolbar-shadow)',
           flexShrink: 0,
-          flexWrap: 'wrap',
+          overflow: 'hidden',
         }}
       >
-        <Link to="/" style={{ color: 'var(--clr-accent-500)', flexShrink: 0, fontSize: '0.875rem', fontWeight: 500 }}>
+        <Link
+          to="/"
+          style={{
+            color: 'var(--clr-accent-500)',
+            flexShrink: 0,
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            letterSpacing: '0.01em',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.3rem',
+          }}
+        >
           ← Back
         </Link>
-        <h2 style={{ margin: 0, fontSize: '0.875rem', flexShrink: 0, color: 'var(--clr-text-secondary)', fontWeight: 500 }}>
+
+        <div style={{ width: 1, height: 16, background: 'var(--clr-divider)', flexShrink: 0 }} />
+
+        <h2
+          style={{
+            margin: 0,
+            fontSize: '0.8rem',
+            color: 'var(--clr-text-secondary)',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            minWidth: 0,
+            flex: '0 1 auto',
+            maxWidth: '220px',
+            letterSpacing: '0.01em',
+          }}
+          title={`Prototype 1.1 — PDF.js · ${pdfName}`}
+        >
           Prototype 1.1 — PDF.js · {pdfName}
         </h2>
-        <div style={{ flex: 1 }} />
+
+        <div style={{ flex: 1, minWidth: 0 }} />
 
         {pageCount > 0 && (
-          <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.82rem', flexShrink: 0 }}>
-            Page {currentPage} / {pageCount}
+          <span
+            style={{
+              color: 'var(--clr-text-muted)',
+              fontSize: '0.78rem',
+              flexShrink: 0,
+              fontVariantNumeric: 'tabular-nums',
+              letterSpacing: '0.02em',
+            }}
+          >
+            {currentPage} / {pageCount}
           </span>
         )}
 
-        <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
+        <div style={{ width: 1, height: 16, background: 'var(--clr-divider)', flexShrink: 0 }} />
 
         {/* Zoom controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', flexShrink: 0 }}>
           <button onClick={() => handleZoom('out')} style={btnStyle} title="Zoom out (Ctrl+−)">−</button>
 
           <select
@@ -511,10 +553,15 @@ const [currentPage, setCurrentPage] = useState(1)
               }
             }}
             style={{
-              background: 'rgba(78, 110, 126, 0.08)', color: 'var(--clr-text-secondary)',
+              background: 'rgba(78, 110, 126, 0.08)',
+              color: 'var(--clr-text-secondary)',
               border: '1px solid rgba(78, 110, 126, 0.18)',
-              borderRadius: '5px', padding: '0.32rem 0.5rem',
-              fontSize: '0.83rem', cursor: 'pointer', outline: 'none',
+              borderRadius: '6px',
+              padding: '0.28rem 0.45rem',
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+              outline: 'none',
+              height: '28px',
             }}
             title="Zoom preset"
           >
@@ -532,7 +579,7 @@ const [currentPage, setCurrentPage] = useState(1)
           <button onClick={() => handleZoom('in')} style={btnStyle} title="Zoom in (Ctrl++)">+</button>
         </div>
 
-        <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
+        <div style={{ width: 1, height: 16, background: 'var(--clr-divider)', flexShrink: 0 }} />
 
         <input
           ref={fileInputRef}
@@ -547,25 +594,28 @@ const [currentPage, setCurrentPage] = useState(1)
 
         {userMarks.length > 0 && (
           <>
-            <div style={{ width: 1, height: 20, background: 'var(--clr-divider)' }} />
-            <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.82rem' }}>
-              {userMarks.length} user mark{userMarks.length !== 1 ? 's' : ''}
+            <div style={{ width: 1, height: 16, background: 'var(--clr-divider)', flexShrink: 0 }} />
+            <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.78rem', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+              {userMarks.length} mark{userMarks.length !== 1 ? 's' : ''}
             </span>
             <button
               onClick={clearMarks}
-              style={{ ...btnStyle, background: 'rgba(248, 113, 113, 0.1)', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.18)' }}
+              style={{ ...btnStyle, background: 'rgba(248, 113, 113, 0.08)', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.18)' }}
               title="Remove all user marks"
             >
-              Clear all
+              Clear
             </button>
           </>
         )}
 
         <ThemeToggle />
 
-        <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.78rem', flexShrink: 0 }}>
-          Click to place mark · Drag to pan · Ctrl+wheel to zoom · Ctrl+0 actual size
-        </span>
+        <button
+          style={{ ...btnStyle, padding: '0 0.45rem', fontSize: '0.75rem', color: 'var(--clr-text-muted)' }}
+          title="Click to place mark · Drag to pan · Ctrl+wheel to zoom · Ctrl+0 actual size"
+        >
+          ?
+        </button>
       </header>
 
       {/* Scrollable PDF container */}
@@ -895,10 +945,15 @@ const btnStyle: React.CSSProperties = {
   background: 'rgba(78, 110, 126, 0.08)',
   color: 'var(--clr-accent-500)',
   border: '1px solid rgba(78, 110, 126, 0.18)',
-  borderRadius: 5,
-  padding: '0.32rem 0.7rem',
+  borderRadius: 6,
+  padding: '0 0.65rem',
+  height: '28px',
   cursor: 'pointer',
-  fontSize: '0.83rem',
+  fontSize: '0.8rem',
   fontWeight: 500,
   flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  lineHeight: 1,
 }

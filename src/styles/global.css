@@ -26,7 +26,7 @@
   /* Text */
   --clr-text-primary: #1C1A17;
   --clr-text-secondary: #5C5753;
-  --clr-text-muted: #9E9A95;
+  --clr-text-muted: #6C6862;    /* 4.8:1 on white — WCAG AA */
 
   /* Shadows — layered for glass depth */
   --shadow-card:
@@ -75,7 +75,7 @@
   /* Text */
   --clr-text-primary: #F0EDE8;
   --clr-text-secondary: #B0AAA2;
-  --clr-text-muted: #72695F;
+  --clr-text-muted: #918D88;    /* 6.4:1 on #0D0F14 — WCAG AA */
 
   /* Deeper shadows — glass depth + subtle glow */
   --shadow-card:
@@ -89,11 +89,11 @@
     0 14px 44px rgba(0, 0, 0, 0.65),
     0 3px 10px rgba(0, 0, 0, 0.35);
 
-  /* Frosted-glass toolbar — near-transparent with blur doing the heavy lifting */
-  --clr-toolbar-bg: rgba(255, 255, 255, 0.06);
-  --clr-toolbar-border: rgba(255, 255, 255, 0.10);
-  --clr-toolbar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 1px 20px rgba(0, 0, 0, 0.40);
-  --clr-divider: rgba(255, 255, 255, 0.10);
+  /* Solid dark toolbar — opaque enough that the colored blobs behind don't bleed through */
+  --clr-toolbar-bg: rgba(8, 11, 18, 0.93);
+  --clr-toolbar-border: rgba(255, 255, 255, 0.08);
+  --clr-toolbar-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 24px rgba(0, 0, 0, 0.60);
+  --clr-divider: rgba(255, 255, 255, 0.12);
   --clr-canvas-bg: #080A0E;
   --clr-inset-surface: rgba(255, 255, 255, 0.05);
 }
