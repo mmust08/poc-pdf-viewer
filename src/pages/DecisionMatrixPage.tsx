@@ -46,6 +46,15 @@ const criteria = [
       'proto6': { score: 4, details: 'Commercial. ~$5k-$50k+ per year depending on usage tier. Enterprise licensing.' },
     },
   },
+  {
+    name: 'Platform Support',
+    description: 'Web and mobile/app platform compatibility',
+    prototypes: {
+      'proto1': { score: 5, details: 'Web-only. Requires WebView implementation for mobile/app deployment. Additional work needed for cross-platform support.' },
+      'proto5': { score: 7, details: 'Web-only for WASM version. Flutter packages available for mobile (e.g., pdfium_flutter). Enables cross-platform code sharing.' },
+      'proto6': { score: 10, details: 'Supported on both Web and mobile platforms. Native SDKs available for iOS/Android. Seamless cross-platform experience.' },
+    },
+  },
 ]
 
 const prototypes = [
