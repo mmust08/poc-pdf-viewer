@@ -7,7 +7,7 @@ const prototypes = [
     paradigm: 'Full-page canvas rendering with viewport-based page virtualization',
     description:
       'Multi-page continuous vertical scroll with page virtualization — only renders pages within the visible viewport + dynamic pre-render margins for smooth scrolling. PDF.js renders each page to canvas (25%-5000% zoom, 0.25-50 scale). SVG overlay holds marks. Debounced zoom rendering (120ms) optimizes performance. Supports PDF file upload and localStorage persistence for user marks.',
-    difficulty: 'Low',
+    difficulty: 'Medium',
     notes: 'NOTES_PROTO1.md',
     visible: true,
   },
@@ -27,7 +27,7 @@ const prototypes = [
     paradigm: 'Native PDFium WASM engine with custom viewer built from scratch',
     description:
       'Direct PDFium WASM rendering via @hyzyla/pdfium — zero dependencies, Chromium-grade quality. Custom zoom/pan (25%-5000%), multi-page scroll with virtualization, adaptive-scale rendering with viewport clipping, double-buffered canvas, and click-to-add marks with localStorage persistence. Single WASM dependency, all viewer code built from scratch.',
-    difficulty: 'Medium',
+    difficulty: 'High',
     notes: 'NOTES_PROTO5.md',
     visible: true,
   },
@@ -79,6 +79,7 @@ function DifficultyBadge({ level }: { level: string }) {
     if (l === 'Medium') return { bg: 'rgba(251, 191, 36, 0.1)', color: '#fbbf24' }
     if (l === 'Medium-High') return { bg: 'rgba(251, 146, 60, 0.1)', color: '#fb923c' }
     if (l === 'High') return { bg: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }
+    if (l === 'Hard') return { bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }
     return { bg: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa' }
   }
   const { bg, color } = getColors(level)
