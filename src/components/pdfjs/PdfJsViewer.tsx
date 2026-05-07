@@ -7,9 +7,40 @@ import MarksOverlay from './MarksOverlay'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker as string
 
-const ZOOM_FACTOR = 1.25
-const MIN_SCALE = 0.25
+const MIN_SCALE = 0.1
 const MAX_SCALE = 50 // 5 000 %
+// Predefined step list: 10pp increments up to 100%, then Firefox-style above
+const ZOOM_STEPS = [
+  0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
+  1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0, 10.0, 50.0,
+]
+const CONTAINER_H_PADDING = 32
+const CONTAINER_V_PADDING = 16
+const ZOOM_PRESETS = [50, 75, 100, 125, 150, 200, 300, 400] as const
+
+type ZoomMode = 'page-width' | 'page-fit' | 'auto' | 'actual-size' | 'custom'
+
+function computeScaleForMode(
+  mode: ZoomMode,
+  containerWidth: number,
+  containerHeight: number,
+  firstPageWidth: number,
+  firstPageHeight: number,
+): number {
+  switch (mode) {
+    case 'page-width':  return (containerWidth - CONTAINER_H_PADDING) / firstPageWidth
+    case 'page-fit':    return Math.min(
+                          (containerWidth  - CONTAINER_H_PADDING) / firstPageWidth,
+                          (containerHeight - CONTAINER_V_PADDING) / firstPageHeight
+                        )
+    case 'auto':        return Math.max(
+                          (containerWidth  - CONTAINER_H_PADDING) / firstPageWidth,
+                          (containerHeight - CONTAINER_V_PADDING) / firstPageHeight
+                        )
+    case 'actual-size': return 1
+    default:            return (containerWidth - CONTAINER_H_PADDING) / firstPageWidth
+  }
+}
 const MAX_CANVAS_DIM = 16384 // max canvas pixels per axis (browser limit)
 const PAGE_GAP = 12
 
@@ -54,6 +85,9 @@ export default function PdfJsViewer() {
   const [pdfDoc, setPdfDoc] = useState<any>(null)
   const [pageGeometries, setPageGeometries] = useState<PageGeometry[]>([])
   const [scale, setScale] = useState(1)
+  const [zoomMode, setZoomMode] = useState<ZoomMode>('page-width')
+  const [zoomInputValue, setZoomInputValue] = useState('100')
+  const [zoomInputFocused, setZoomInputFocused] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [scrollVersion, setScrollVersion] = useState(0)
@@ -93,8 +127,16 @@ export default function PdfJsViewer() {
         setPageGeometries(geometries)
 
         if (geometries.length > 0 && containerRef.current) {
-          const containerWidth = containerRef.current.clientWidth - 32
-          setScale(containerWidth / geometries[0].widthPt)
+          const newScale = computeScaleForMode(
+            'page-width',
+            containerRef.current.clientWidth,
+            containerRef.current.clientHeight,
+            geometries[0].widthPt,
+            geometries[0].heightPt,
+          )
+          setZoomMode('page-width')
+          zoomModeRef.current = 'page-width'
+          setScale(Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale)))
         }
 
         restoreMarks(pdfName)
@@ -124,11 +166,27 @@ export default function PdfJsViewer() {
     container.scrollTop = pending.pdfY * scale - anchorY
   }, [scale])
 
+  // ── Sync zoom input display with scale (when not focused) ────────────
+  useEffect(() => {
+    if (!zoomInputFocused) {
+      setZoomInputValue(String(Math.round(scale * 100)))
+    }
+  }, [scale, zoomInputFocused])
+
   // ── Ctrl+wheel / pinch zoom ──────────────────────────────────────────
   // Scale is read via a ref so we attach the listener once (non-passive to
   // preventDefault) without re-creating it on every scale change.
   const wheelScaleRef = useRef(scale)
   wheelScaleRef.current = scale
+
+  const zoomModeRef = useRef<ZoomMode>('page-width')
+  zoomModeRef.current = zoomMode
+
+  const pageGeometriesRef = useRef<PageGeometry[]>([])
+  pageGeometriesRef.current = pageGeometries
+
+  const wheelZoomModeRef = useRef<ZoomMode>('page-width')
+  wheelZoomModeRef.current = zoomMode
 
   useEffect(() => {
     const container = containerRef.current
@@ -140,10 +198,13 @@ export default function PdfJsViewer() {
       e.preventDefault()
 
       const oldScale = wheelScaleRef.current
-      const newScale =
-        e.deltaY < 0
-          ? Math.min(MAX_SCALE, oldScale * ZOOM_FACTOR)
-          : Math.max(MIN_SCALE, oldScale / ZOOM_FACTOR)
+      let newScale: number
+      if (e.deltaY < 0) {
+        newScale = ZOOM_STEPS.find((s) => s > oldScale + 1e-9) ?? MAX_SCALE
+      } else {
+        newScale = [...ZOOM_STEPS].reverse().find((s) => s < oldScale - 1e-9) ?? MIN_SCALE
+      }
+      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale))
       if (newScale === oldScale) return
 
       const rect = container.getBoundingClientRect()
@@ -159,6 +220,10 @@ export default function PdfJsViewer() {
         anchorViewportX: pointerViewportX,
         anchorViewportY: pointerViewportY,
       }
+      if (wheelZoomModeRef.current !== 'custom') {
+        setZoomMode('custom')
+        wheelZoomModeRef.current = 'custom'
+      }
       setScale(newScale)
     }
 
@@ -166,6 +231,60 @@ export default function PdfJsViewer() {
     return () => container.removeEventListener('wheel', onWheel)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ── ResizeObserver: recompute scale on container resize (named modes) ─
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const ro = new ResizeObserver(() => {
+      const mode = zoomModeRef.current
+      if (mode === 'custom') return
+      const geoms = pageGeometriesRef.current
+      if (geoms.length === 0) return
+      const newScale = computeScaleForMode(
+        mode,
+        container.clientWidth,
+        container.clientHeight,
+        geoms[0].widthPt,
+        geoms[0].heightPt,
+      )
+      setScale(Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale)))
+    })
+    ro.observe(container)
+    return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Keyboard shortcuts: Ctrl++/−/0 ───────────────────────────────────
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (!e.ctrlKey && !e.metaKey) return
+      if (e.key === '+' || e.key === '=' || e.key === 'Add') {
+        e.preventDefault()
+        handleZoom('in')
+      } else if (e.key === '-' || e.key === 'Subtract') {
+        e.preventDefault()
+        handleZoom('out')
+      } else if (e.key === '0') {
+        e.preventDefault()
+        setZoomMode('actual-size')
+        zoomModeRef.current = 'actual-size'
+        const container = containerRef.current
+        if (container) {
+          pendingZoomRef.current = {
+            pdfX: (container.scrollLeft + container.clientWidth / 2) / scale,
+            pdfY: (container.scrollTop + container.clientHeight / 2) / scale,
+            newScale: 1,
+          }
+        }
+        setScale(1)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [scale])
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     if (pageGeometries.length > 0) {
@@ -219,16 +338,70 @@ export default function PdfJsViewer() {
     setIsPanning(false)
   }
 
+  // ── Zoom mode helpers ─────────────────────────────────────────────────
+  function applyZoomMode(mode: ZoomMode) {
+    const container = containerRef.current
+    if (!container || mode === 'custom' || pageGeometries.length === 0) return
+    const newScale = computeScaleForMode(
+      mode,
+      container.clientWidth,
+      container.clientHeight,
+      pageGeometries[0].widthPt,
+      pageGeometries[0].heightPt,
+    )
+    const clamped = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale))
+    if (clamped === scale) return
+    const pdfX = (container.scrollLeft + container.clientWidth / 2) / scale
+    const pdfY = (container.scrollTop + container.clientHeight / 2) / scale
+    pendingZoomRef.current = { pdfX, pdfY, newScale: clamped }
+    setScale(clamped)
+  }
+
+  function handleZoomMode(newMode: ZoomMode) {
+    setZoomMode(newMode)
+    zoomModeRef.current = newMode
+    applyZoomMode(newMode)
+  }
+
+  function commitZoomInput() {
+    const parsed = parseInt(zoomInputValue, 10)
+    const minPct = Math.round(MIN_SCALE * 100)
+    const maxPct = Math.round(MAX_SCALE * 100)
+    if (!isNaN(parsed) && parsed >= minPct && parsed <= maxPct) {
+      const newScale = parsed / 100
+      const container = containerRef.current
+      if (container) {
+        pendingZoomRef.current = {
+          pdfX: (container.scrollLeft + container.clientWidth / 2) / scale,
+          pdfY: (container.scrollTop + container.clientHeight / 2) / scale,
+          newScale,
+        }
+      }
+      setScale(newScale)
+      setZoomMode('custom')
+      zoomModeRef.current = 'custom'
+    } else {
+      setZoomInputValue(String(Math.round(scale * 100)))
+    }
+    setZoomInputFocused(false)
+  }
+
   // ── Zoom handler (button zoom — centres on viewport) ─────────────────
   function handleZoom(direction: 'in' | 'out') {
     const container = containerRef.current
     if (!container) return
 
+    setZoomMode('custom')
+    zoomModeRef.current = 'custom'
+
     const oldScale = scale
-    const newScale =
-      direction === 'in'
-        ? Math.min(MAX_SCALE, oldScale * ZOOM_FACTOR)
-        : Math.max(MIN_SCALE, oldScale / ZOOM_FACTOR)
+    let newScale: number
+    if (direction === 'in') {
+      newScale = ZOOM_STEPS.find((s) => s > oldScale + 1e-9) ?? MAX_SCALE
+    } else {
+      newScale = [...ZOOM_STEPS].reverse().find((s) => s < oldScale - 1e-9) ?? MIN_SCALE
+    }
+    newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale))
     if (newScale === oldScale) return
 
     const pdfX = (container.scrollLeft + container.clientWidth / 2) / oldScale
@@ -320,15 +493,81 @@ export default function PdfJsViewer() {
 
         {/* Zoom controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
-          <button onClick={() => handleZoom('out')} style={btnStyle} title="Zoom out">
-            −
-          </button>
-          <span style={{ color: '#a9a7c0', fontSize: '0.83rem', minWidth: 45, textAlign: 'center' }}>
-            {zoomPercent}%
-          </span>
-          <button onClick={() => handleZoom('in')} style={btnStyle} title="Zoom in">
-            +
-          </button>
+          <button onClick={() => handleZoom('out')} style={btnStyle} title="Zoom out (Ctrl+−)">−</button>
+
+          <input
+            type="text"
+            value={zoomInputValue}
+            onFocus={(e) => { setZoomInputFocused(true); e.target.select() }}
+            onBlur={commitZoomInput}
+            onChange={(e) => setZoomInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { commitZoomInput(); (e.target as HTMLInputElement).blur() }
+              if (e.key === 'Escape') {
+                setZoomInputValue(String(Math.round(scale * 100)))
+                setZoomInputFocused(false);
+                (e.target as HTMLInputElement).blur()
+              }
+            }}
+            style={{
+              width: 40, textAlign: 'right',
+              background: 'rgba(139, 92, 246, 0.08)', color: '#a9a7c0',
+              border: '1px solid rgba(139, 92, 246, 0.2)', borderRight: 'none',
+              borderRadius: '5px 0 0 5px', padding: '0.32rem 0.3rem 0.32rem 0.4rem',
+              fontSize: '0.83rem', outline: 'none',
+            }}
+            title="Zoom level — type a value and press Enter"
+          />
+          <span style={{
+            background: 'rgba(139, 92, 246, 0.08)', color: '#a9a7c0',
+            border: '1px solid rgba(139, 92, 246, 0.2)', borderLeft: 'none', borderRight: 'none',
+            padding: '0.32rem 0.2rem 0.32rem 0',
+            fontSize: '0.83rem', lineHeight: '1.2', userSelect: 'none',
+          }}>%</span>
+
+          <select
+            value={zoomMode === 'custom' ? '__custom__' : zoomMode}
+            onChange={(e) => {
+              const v = e.target.value
+              if (v === '__custom__') return
+              if (v.startsWith('__preset_')) {
+                const pct = parseInt(v.replace('__preset_', ''), 10)
+                const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, pct / 100))
+                const container = containerRef.current
+                if (container) {
+                  pendingZoomRef.current = {
+                    pdfX: (container.scrollLeft + container.clientWidth / 2) / scale,
+                    pdfY: (container.scrollTop + container.clientHeight / 2) / scale,
+                    newScale,
+                  }
+                }
+                setScale(newScale)
+                setZoomMode('custom')
+                zoomModeRef.current = 'custom'
+              } else {
+                handleZoomMode(v as ZoomMode)
+              }
+            }}
+            style={{
+              background: 'rgba(139, 92, 246, 0.1)', color: '#a9a7c0',
+              border: '1px solid rgba(139, 92, 246, 0.2)',
+              borderRadius: '0 5px 5px 0', padding: '0.32rem 0.3rem 0.32rem 0.2rem',
+              fontSize: '0.83rem', cursor: 'pointer', outline: 'none',
+            }}
+            title="Zoom preset"
+          >
+            <option value="auto">Automatic Zoom</option>
+            <option value="actual-size">Actual Size</option>
+            <option value="page-fit">Page Fit</option>
+            <option value="page-width">Page Width</option>
+            <option disabled>──────────</option>
+            {ZOOM_PRESETS.map((p) => (
+              <option key={p} value={`__preset_${p}`}>{p}%</option>
+            ))}
+            {zoomMode === 'custom' && <option value="__custom__">{zoomPercent}%</option>}
+          </select>
+
+          <button onClick={() => handleZoom('in')} style={btnStyle} title="Zoom in (Ctrl++)">+</button>
         </div>
 
         <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
@@ -361,7 +600,7 @@ export default function PdfJsViewer() {
         )}
 
         <span style={{ color: '#67647c', fontSize: '0.78rem', flexShrink: 0 }}>
-          Click to place mark · Drag to pan · Ctrl+wheel to zoom
+          Click to place mark · Drag to pan · Ctrl+wheel to zoom · Ctrl+0 actual size
         </span>
       </header>
 
