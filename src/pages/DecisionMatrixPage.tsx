@@ -70,9 +70,9 @@ const criteria = [
 ]
 
 const prototypes = [
-  { id: 'proto1', name: 'PDF.js + react-zoom-pan-pinch', color: '#a78bfa' },
-  { id: 'proto5', name: 'PDFium Raw WASM', color: '#34d399' },
-  { id: 'proto6', name: 'Nutrient Web SDK', color: '#fbbf24' },
+  { id: 'proto1', name: 'PDF.js + react-zoom-pan-pinch', color: '#4E6E7E' },
+  { id: 'proto5', name: 'PDFium Raw WASM', color: '#4A8065' },
+  { id: 'proto6', name: 'Nutrient Web SDK', color: '#8A6B2A' },
 ]
 
 const glassCard: CSSProperties = {
@@ -118,7 +118,7 @@ export default function DecisionMatrixPage() {
             fontWeight: 500,
             transition: 'color 0.15s ease',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-purple-400)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-muted)' }}
         >
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -133,9 +133,9 @@ export default function DecisionMatrixPage() {
             display: 'inline-block',
             padding: '3px 10px',
             borderRadius: 6,
-            background: 'rgba(139, 92, 246, 0.1)',
-            border: '1px solid rgba(139, 92, 246, 0.25)',
-            color: 'var(--clr-purple-400)',
+            background: 'rgba(78, 110, 126, 0.09)',
+            border: '1px solid rgba(78, 110, 126, 0.22)',
+            color: 'var(--clr-accent-500)',
             fontSize: '0.7rem',
             fontWeight: 700,
             letterSpacing: '0.1em',
@@ -217,8 +217,8 @@ export default function DecisionMatrixPage() {
                     <div
                       key={p.id}
                       style={{
-                        background: 'rgba(0, 0, 0, 0.2)',
-                        border: `1px solid ${p.color}20`,
+                        background: 'rgba(255, 255, 255, 0.45)',
+                        border: `1px solid ${p.color}28`,
                         borderRadius: 'var(--radius-md)',
                         padding: '1rem',
                       }}
@@ -235,7 +235,7 @@ export default function DecisionMatrixPage() {
                         <div style={{
                           width: '100%',
                           height: 4,
-                          background: 'rgba(255, 255, 255, 0.07)',
+                          background: 'rgba(0, 0, 0, 0.08)',
                           borderRadius: 2,
                           overflow: 'hidden',
                         }}>
@@ -262,7 +262,7 @@ export default function DecisionMatrixPage() {
         {/* Recommendation */}
         <div style={{
           ...glassCard,
-          border: '1px solid rgba(139, 92, 246, 0.2)',
+          border: '1px solid rgba(78, 110, 126, 0.22)',
           marginBottom: '2rem',
         }}>
           <h2 style={{ margin: '0 0 1.5rem', color: 'var(--clr-text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>
@@ -271,12 +271,12 @@ export default function DecisionMatrixPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
             <div style={{
-              background: 'rgba(167, 139, 250, 0.06)',
-              border: '1px solid rgba(167, 139, 250, 0.15)',
+              background: 'rgba(78, 110, 126, 0.06)',
+              border: '1px solid rgba(78, 110, 126, 0.16)',
               borderRadius: 'var(--radius-md)',
               padding: '1.25rem',
             }}>
-              <h3 style={{ color: '#a78bfa', marginTop: 0, marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 600 }}>
+              <h3 style={{ color: '#4E6E7E', marginTop: 0, marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 600 }}>
                 Recommended for Simplicity — PDF.js
               </h3>
               <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--clr-text-secondary)', fontSize: '0.875rem', lineHeight: 1.7 }}>
@@ -291,12 +291,12 @@ export default function DecisionMatrixPage() {
             </div>
 
             <div style={{
-              background: 'rgba(52, 211, 153, 0.06)',
-              border: '1px solid rgba(52, 211, 153, 0.15)',
+              background: 'rgba(74, 128, 101, 0.06)',
+              border: '1px solid rgba(74, 128, 101, 0.16)',
               borderRadius: 'var(--radius-md)',
               padding: '1.25rem',
             }}>
-              <h3 style={{ color: '#34d399', marginTop: 0, marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 600 }}>
+              <h3 style={{ color: '#4A8065', marginTop: 0, marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 600 }}>
                 Best Overall — PDFium Raw WASM
               </h3>
               <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--clr-text-secondary)', fontSize: '0.875rem', lineHeight: 1.7 }}>
@@ -312,12 +312,12 @@ export default function DecisionMatrixPage() {
           </div>
 
           <div style={{
-            background: 'rgba(251, 191, 36, 0.05)',
-            border: '1px solid rgba(251, 191, 36, 0.12)',
+            background: 'rgba(138, 107, 42, 0.06)',
+            border: '1px solid rgba(138, 107, 42, 0.16)',
             borderRadius: 'var(--radius-md)',
             padding: '1.25rem',
           }}>
-            <h3 style={{ color: '#fbbf24', marginTop: 0, marginBottom: '0.5rem', fontSize: '0.95rem', fontWeight: 600 }}>
+            <h3 style={{ color: '#8A6B2A', marginTop: 0, marginBottom: '0.5rem', fontSize: '0.95rem', fontWeight: 600 }}>
               Nutrient Web SDK — Not Recommended
             </h3>
             <p style={{ margin: 0, color: 'var(--clr-text-secondary)', fontSize: '0.875rem', lineHeight: 1.65 }}>

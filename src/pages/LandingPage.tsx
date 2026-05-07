@@ -6,7 +6,7 @@ const prototypes = [
     name: 'Prototype 1.1 — PDF.js with Multi-page Virtualization',
     paradigm: 'Full-page canvas rendering with viewport-based page virtualization',
     description:
-      'Multi-page continuous vertical scroll with page virtualization — only renders pages within the visible viewport + dynamic pre-render margins for smooth scrolling. PDF.js renders each page to canvas (25%-5000% zoom, 0.25-50 scale). SVG overlay holds marks. Debounced zoom rendering (120ms) optimizes performance. Supports PDF file upload and localStorage persistence for user marks.',
+      'PDF.js renders each page to canvas (25%–5000% zoom, 0.25–50 scale). Only pages within the visible viewport are rendered, with dynamic pre-render margins for smooth scrolling. SVG overlay holds marks. Debounced zoom rendering (120ms) optimizes performance. Supports PDF upload and localStorage persistence for user marks.',
     difficulty: 'Medium',
     notes: 'NOTES_PROTO1.md',
     visible: true,
@@ -16,7 +16,7 @@ const prototypes = [
     name: 'Prototype 1.2 — PDF.js Canvas Tile Renderer',
     paradigm: 'Tiled canvas rendering with CSS upscaling during zoom',
     description:
-      'PDF.js renders pages in 512×512 tiles for efficient viewport-based caching. Marks are SVG overlays. During zoom, tiles are CSS-scaled until render finishes, eliminating white flash. Supports zoom levels from 50% to 1600% with anchor-point zoom and right-click panning.',
+      'PDF.js renders pages in 512×512 tiles for efficient viewport-based caching. Marks are SVG overlays. During zoom, tiles are CSS-scaled until a re-render completes, eliminating white flash. Supports 50%–1600% zoom with anchor-point zoom and right-click panning.',
     difficulty: 'Medium',
     notes: 'NOTES_PROTO1_2.md',
     visible: true,
@@ -26,7 +26,7 @@ const prototypes = [
     name: 'Prototype 5 — PDFium Raw WASM',
     paradigm: 'Native PDFium WASM engine with custom viewer built from scratch',
     description:
-      'Direct PDFium WASM rendering via @hyzyla/pdfium — zero dependencies, Chromium-grade quality. Custom zoom/pan (25%-5000%), multi-page scroll with virtualization, adaptive-scale rendering with viewport clipping, double-buffered canvas, and click-to-add marks with localStorage persistence. Single WASM dependency, all viewer code built from scratch.',
+      'Direct PDFium WASM rendering via @hyzyla/pdfium — zero dependencies, Chromium-grade quality. Custom zoom/pan (25%–5000%), multi-page scroll with virtualization, adaptive-scale rendering with viewport clipping, double-buffered canvas, and click-to-add marks with localStorage persistence. Single WASM dependency, all viewer code built from scratch.',
     difficulty: 'High',
     notes: 'NOTES_PROTO5.md',
     visible: true,
@@ -73,14 +73,20 @@ const prototypes = [
   },
 ]
 
+function parsePrototypeName(name: string): { label: string; title: string } {
+  const sep = name.indexOf('—')
+  if (sep === -1) return { label: '', title: name }
+  return { label: name.slice(0, sep).trim(), title: name.slice(sep + 1).trim() }
+}
+
 function DifficultyBadge({ level }: { level: string }) {
   const getColors = (l: string): { bg: string; color: string } => {
-    if (l === 'Low') return { bg: 'rgba(52, 211, 153, 0.1)', color: '#34d399' }
-    if (l === 'Medium') return { bg: 'rgba(251, 191, 36, 0.1)', color: '#fbbf24' }
-    if (l === 'Medium-High') return { bg: 'rgba(251, 146, 60, 0.1)', color: '#fb923c' }
-    if (l === 'High') return { bg: 'rgba(248, 113, 113, 0.1)', color: '#f87171' }
-    if (l === 'Hard') return { bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }
-    return { bg: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa' }
+    if (l === 'Low') return { bg: 'rgba(60, 130, 90, 0.10)', color: '#3C7A58' }
+    if (l === 'Medium') return { bg: 'rgba(155, 120, 50, 0.10)', color: '#8A6B2A' }
+    if (l === 'Medium-High') return { bg: 'rgba(170, 100, 50, 0.10)', color: '#9A5E32' }
+    if (l === 'High') return { bg: 'rgba(160, 60, 60, 0.10)', color: '#9A4A4A' }
+    if (l === 'Hard') return { bg: 'rgba(150, 50, 50, 0.12)', color: '#8A3838' }
+    return { bg: 'rgba(78, 110, 126, 0.10)', color: '#4E6E7E' }
   }
   const { bg, color } = getColors(level)
   return (
@@ -110,9 +116,9 @@ export default function LandingPage() {
           display: 'inline-block',
           padding: '3px 10px',
           borderRadius: 6,
-          background: 'rgba(139, 92, 246, 0.1)',
-          border: '1px solid rgba(139, 92, 246, 0.25)',
-          color: 'var(--clr-purple-400)',
+          background: 'rgba(78, 110, 126, 0.09)',
+          border: '1px solid rgba(78, 110, 126, 0.22)',
+          color: 'var(--clr-accent-500)',
           fontSize: '0.7rem',
           fontWeight: 700,
           letterSpacing: '0.1em',
@@ -151,23 +157,23 @@ export default function LandingPage() {
             alignItems: 'center',
             gap: '0.45rem',
             padding: '0.5rem 1rem',
-            background: 'rgba(139, 92, 246, 0.1)',
-            border: '1px solid rgba(139, 92, 246, 0.25)',
+            background: 'rgba(78, 110, 126, 0.09)',
+            border: '1px solid rgba(78, 110, 126, 0.22)',
             borderRadius: 8,
-            color: 'var(--clr-purple-400)',
+            color: 'var(--clr-accent-500)',
             fontWeight: 500,
             fontSize: '0.875rem',
             transition: 'all 0.2s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(139, 92, 246, 0.18)'
-            e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.45)'
-            e.currentTarget.style.color = 'var(--clr-purple-300)'
+            e.currentTarget.style.background = 'rgba(78, 110, 126, 0.15)'
+            e.currentTarget.style.borderColor = 'rgba(78, 110, 126, 0.38)'
+            e.currentTarget.style.color = 'var(--clr-accent-400)'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'
-            e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.25)'
-            e.currentTarget.style.color = 'var(--clr-purple-400)'
+            e.currentTarget.style.background = 'rgba(78, 110, 126, 0.09)'
+            e.currentTarget.style.borderColor = 'rgba(78, 110, 126, 0.22)'
+            e.currentTarget.style.color = 'var(--clr-accent-500)'
           }}
         >
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -187,111 +193,122 @@ export default function LandingPage() {
 
       {/* Prototype cards */}
       <div style={{ display: 'grid', gap: '0.875rem' }}>
-        {prototypes.filter((p) => p.visible).map((p) => (
-          <div
-            key={p.path}
-            onClick={() => navigate(p.path)}
-            style={{
-              background: 'var(--clr-surface)',
-              backdropFilter: 'blur(16px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-              border: '1px solid var(--clr-border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '1.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: 'var(--shadow-card)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--clr-surface-hover)'
-              e.currentTarget.style.borderColor = 'var(--clr-border-hover)'
-              e.currentTarget.style.transform = 'translateY(-1px)'
-              e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--clr-surface)'
-              e.currentTarget.style.borderColor = 'var(--clr-border)'
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'var(--shadow-card)'
-            }}
-          >
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: '0.75rem',
-              marginBottom: '0.5rem',
-            }}>
-              <h2 style={{
-                margin: 0,
-                fontSize: '1rem',
-                fontWeight: 600,
-                color: 'var(--clr-text-primary)',
-                lineHeight: 1.35,
+        {prototypes.filter((p) => p.visible).map((p) => {
+          const { label, title } = parsePrototypeName(p.name)
+          return (
+            <div
+              key={p.path}
+              onClick={() => navigate(p.path)}
+              style={{
+                background: 'var(--clr-surface)',
+                backdropFilter: 'blur(16px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                border: '1px solid var(--clr-border)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '1.5rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: 'var(--shadow-card)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--clr-surface-hover)'
+                e.currentTarget.style.borderColor = 'var(--clr-border-hover)'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--clr-surface)'
+                e.currentTarget.style.borderColor = 'var(--clr-border)'
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'var(--shadow-card)'
+              }}
+            >
+              {/* Meta row: prototype label + difficulty (appears once only) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '0.55rem',
               }}>
-                {p.name}
-              </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, marginTop: 1 }}>
+                <span style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase' as const,
+                  color: 'var(--clr-text-muted)',
+                }}>
+                  {label}
+                </span>
                 <DifficultyBadge level={p.difficulty} />
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ color: 'var(--clr-text-muted)', flexShrink: 0 }}>
-                  <path d="M3 7.5H12M8.5 4L12 7.5L8.5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
               </div>
-            </div>
 
-            <p style={{
-              margin: '0 0 0.65rem',
-              color: 'var(--clr-purple-400)',
-              fontSize: '0.82rem',
-              fontWeight: 500,
-              lineHeight: 1.5,
-              opacity: 0.85,
-            }}>
-              {p.paradigm}
-            </p>
+              {/* Title — the tech name without the "Prototype X —" prefix */}
+              <h2 style={{
+                margin: '0 0 0.75rem',
+                fontSize: '1.05rem',
+                fontWeight: 700,
+                color: 'var(--clr-text-primary)',
+                lineHeight: 1.3,
+                letterSpacing: '-0.015em',
+              }}>
+                {title}
+              </h2>
 
-            <p style={{
-              margin: '0 0 1rem',
-              color: 'var(--clr-text-secondary)',
-              fontSize: '0.875rem',
-              lineHeight: 1.65,
-            }}>
-              {p.description}
-            </p>
+              {/* Paradigm — architectural approach, visually distinct from description */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.55rem',
+                marginBottom: '0.875rem',
+                paddingLeft: '0.75rem',
+                borderLeft: '2px solid rgba(78, 110, 126, 0.28)',
+              }}>
+                <p style={{
+                  margin: 0,
+                  color: 'var(--clr-accent-500)',
+                  fontSize: '0.83rem',
+                  fontWeight: 500,
+                  lineHeight: 1.55,
+                }}>
+                  {p.paradigm}
+                </p>
+              </div>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              paddingTop: '0.75rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-              fontSize: '0.78rem',
-              color: 'var(--clr-text-muted)',
-            }}>
-              <span>
-                Complexity:{' '}
-                <span style={{ color: 'var(--clr-text-secondary)', fontWeight: 500 }}>{p.difficulty}</span>
-              </span>
+              {/* Description — full technical detail */}
+              <p style={{
+                margin: p.notes ? '0 0 1rem' : 0,
+                color: 'var(--clr-text-secondary)',
+                fontSize: '0.875rem',
+                lineHeight: 1.7,
+              }}>
+                {p.description}
+              </p>
+
+              {/* Footer — notes link only, difficulty already shown above */}
               {p.notes && (
-                <Link
-                  to={`/notes/${p.notes}`}
-                  style={{
-                    marginLeft: 'auto',
-                    fontSize: '0.78rem',
-                    color: 'var(--clr-purple-400)',
-                    fontWeight: 500,
-                    transition: 'color 0.15s ease',
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-purple-300)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-purple-400)' }}
-                >
-                  Notes →
-                </Link>
+                <div style={{
+                  paddingTop: '0.75rem',
+                  borderTop: '1px solid var(--clr-border-secondary)',
+                }}>
+                  <Link
+                    to={`/notes/${p.notes}`}
+                    style={{
+                      fontSize: '0.78rem',
+                      color: 'var(--clr-accent-500)',
+                      fontWeight: 500,
+                      transition: 'color 0.15s ease',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-400)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
+                  >
+                    View notes →
+                  </Link>
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

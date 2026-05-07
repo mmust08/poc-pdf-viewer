@@ -1,37 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 :root {
-  --clr-bg: #0d0b18;
-  --clr-surface: rgba(255, 255, 255, 0.035);
-  --clr-surface-hover: rgba(255, 255, 255, 0.06);
-  --clr-border: rgba(255, 255, 255, 0.075);
-  --clr-border-hover: rgba(139, 92, 246, 0.3);
+  /* Warm neutral background */
+  --clr-bg: #ECEAE5;
 
-  --clr-purple-300: #c4b5fd;
-  --clr-purple-400: #a78bfa;
-  --clr-purple-500: #8b5cf6;
+  /* Glass surfaces */
+  --clr-surface: rgba(255, 255, 255, 0.62);
+  --clr-surface-hover: rgba(255, 255, 255, 0.80);
+  --clr-surface-strong: rgba(255, 255, 255, 0.90);
 
-  --clr-text-primary: #f0effe;
-  --clr-text-secondary: #a9a7c0;
-  --clr-text-muted: #67647c;
+  /* Borders */
+  --clr-border: rgba(255, 255, 255, 0.82);
+  --clr-border-secondary: rgba(0, 0, 0, 0.07);
+  --clr-border-hover: rgba(78, 110, 126, 0.30);
 
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* Accent — muted slate-teal */
+  --clr-accent-300: #9BB4C0;
+  --clr-accent-400: #6D90A2;
+  --clr-accent-500: #4E6E7E;
+
+  /* Text */
+  --clr-text-primary: #1C1A17;
+  --clr-text-secondary: #5C5753;
+  --clr-text-muted: #9E9A95;
+
+  /* Shadows — layered for glass depth */
+  --shadow-card:
+    inset 0 1px 0 rgba(255, 255, 255, 0.90),
+    0 2px 12px rgba(0, 0, 0, 0.055),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 8px 28px rgba(0, 0, 0, 0.095),
+    0 2px 8px rgba(0, 0, 0, 0.055);
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
+  --radius-xl: 20px;
 }
 
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   background: var(--clr-bg);
   color: var(--clr-text-primary);
 }
@@ -45,9 +62,9 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 5% -5%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
-    radial-gradient(ellipse 55% 45% at 95% 105%, rgba(109, 40, 217, 0.11) 0%, transparent 55%),
-    radial-gradient(ellipse 35% 25% at 55% 50%, rgba(124, 58, 237, 0.05) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 55% at 8% -5%, rgba(200, 218, 228, 0.70) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 92% 105%, rgba(210, 200, 188, 0.60) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 52% 50%, rgba(230, 226, 218, 0.35) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -58,18 +75,18 @@ body::before {
 }
 
 a {
-  color: var(--clr-purple-400);
+  color: var(--clr-accent-500);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 a:hover {
-  color: var(--clr-purple-300);
+  color: var(--clr-accent-400);
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.28);
-  color: #f0effe;
+  background: rgba(78, 110, 126, 0.18);
+  color: var(--clr-text-primary);
 }
 
 ::-webkit-scrollbar {
@@ -82,10 +99,10 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.25);
+  background: rgba(78, 110, 126, 0.18);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.45);
+  background: rgba(78, 110, 126, 0.32);
 }
