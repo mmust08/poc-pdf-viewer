@@ -1,5 +1,21 @@
 import { Link } from 'react-router-dom'
 
+const printStyles = `
+  @media print {
+    /* Hide back button - first anchor link */
+    a {
+      page-break-inside: avoid;
+    }
+
+    a:first-of-type {
+      display: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      height: 0 !important;
+    }
+  }
+`;
+
 const criteria = [
   {
     name: 'Performance',
@@ -76,8 +92,10 @@ export default function DecisionMatrixPage() {
   const overallScores = calculateOverallScores()
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem' }}>
-      <Link
+    <>
+      <style>{printStyles}</style>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem' }}>
+        <Link
         to="/"
         style={{
           display: 'inline-block',
@@ -248,5 +266,6 @@ export default function DecisionMatrixPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
