@@ -101,10 +101,11 @@
 /* Vivid colored blobs that glow through the glass surfaces */
 [data-theme="dark"] body::before {
   background:
-    radial-gradient(ellipse 75% 65% at 5% -5%,  rgba(52, 104, 140, 0.60) 0%, transparent 58%),
-    radial-gradient(ellipse 65% 55% at 95% 105%, rgba(72, 48, 110, 0.50) 0%, transparent 55%),
-    radial-gradient(ellipse 45% 38% at 55% 48%,  rgba(30, 68, 90,  0.32) 0%, transparent 65%),
-    radial-gradient(ellipse 35% 30% at 20% 80%,  rgba(40, 80, 60,  0.22) 0%, transparent 55%);
+    radial-gradient(ellipse 100% 90% at 0% 0%,   rgba(52, 104, 140, 0.58) 0%, transparent 62%),
+    radial-gradient(ellipse 70% 60% at 95% 105%,  rgba(72, 48, 110, 0.50) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 55% 48%,   rgba(30, 68, 90,  0.32) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 55% at 0% 100%,   rgba(38, 72, 56,  0.34) 0%, transparent 60%),
+    linear-gradient(145deg, rgba(18, 38, 58, 0.45) 0%, rgba(10, 12, 22, 0.20) 55%, transparent 100%);
 }
 /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -123,13 +124,20 @@ html.theme-transitioning *::after {
   transition-delay: 0s !important;
 }
 
-html, body, #root {
+html, body {
   height: 100%;
   margin: 0;
   padding: 0;
   font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   background: var(--clr-bg);
   color: var(--clr-text-primary);
+}
+
+#root {
+  min-height: 100%;
+  position: relative;
+  z-index: 1;
+  background: transparent;
 }
 
 body {
@@ -141,16 +149,12 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 55% at 8% -5%, rgba(200, 218, 228, 0.70) 0%, transparent 55%),
-    radial-gradient(ellipse 55% 45% at 92% 105%, rgba(210, 200, 188, 0.60) 0%, transparent 55%),
-    radial-gradient(ellipse 40% 30% at 52% 50%, rgba(230, 226, 218, 0.35) 0%, transparent 60%);
+    radial-gradient(ellipse 100% 80% at 0% 0%,   rgba(200, 218, 228, 0.68) 0%, transparent 62%),
+    radial-gradient(ellipse 65% 55% at 92% 105%,  rgba(210, 200, 188, 0.60) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 52% 50%,   rgba(230, 226, 218, 0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 50% at 0% 100%,   rgba(215, 220, 210, 0.40) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
-}
-
-#root {
-  position: relative;
-  z-index: 1;
 }
 
 a {
