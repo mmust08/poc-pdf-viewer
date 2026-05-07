@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 const prototypes = [
   {
     path: '/prototype/pdfjs',
-    name: 'Prototype 1.1 — PDF.js + react-zoom-pan-pinch with Upload',
-    paradigm: 'Canvas render + CSS transform container',
+    name: 'Prototype 1.1 — PDF.js with Multi-page Virtualization',
+    paradigm: 'Full-page canvas rendering with viewport-based page virtualization',
     description:
-      'PDF.js renders the page to a <canvas>. An <svg> overlay (absolutely positioned, same container) holds the marks. react-zoom-pan-pinch wraps both in a single CSS matrix() transform — marks anchor for free. Supports PDF file upload from your computer.',
+      'Multi-page continuous vertical scroll with page virtualization — only renders pages within the visible viewport + dynamic pre-render margins for smooth scrolling. PDF.js renders each page to canvas (25%-5000% zoom, 0.25-50 scale). SVG overlay holds marks. Debounced zoom rendering (120ms) optimizes performance. Supports PDF file upload and localStorage persistence for user marks.',
     difficulty: 'Low',
     notes: 'NOTES_PROTO1.md',
     visible: true,
