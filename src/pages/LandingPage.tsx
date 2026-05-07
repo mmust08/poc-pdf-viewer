@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useTheme } from '../hooks/useTheme'
+import { useRef, useState } from 'react'
 
 const prototypes = [
   {
@@ -117,9 +118,188 @@ function DifficultyBadge({ level }: { level: string }) {
   )
 }
 
-export default function LandingPage() {
-  const navigate = useNavigate()
 
+function PrototypeCard({ p }: { p: (typeof prototypes)[0] }) {
+  const navigate = useNavigate()
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [isHovered, setIsHovered] = useState(false)
+  const [tilt, setTilt] = useState({ rotX: 0, rotY: 0 })
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 })
+
+  const { label, title } = parsePrototypeName(p.name)
+
+  function handleMouseEnter() {
+    setIsHovered(true)
+  }
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!cardRef.current) return
+    const rect = cardRef.current.getBoundingClientRect()
+    const cx = (e.clientX - rect.left) / rect.width - 0.5
+    const cy = (e.clientY - rect.top) / rect.height - 0.5
+    setTilt({ rotX: -cy * 3, rotY: cx * 4 })
+    setMousePos({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    })
+  }
+
+  function handleMouseLeave() {
+    setIsHovered(false)
+    setTilt({ rotX: 0, rotY: 0 })
+    setMousePos({ x: 50, y: 50 })
+  }
+
+  // Hue shifts from cool cyan-blue (195°) on the left to steel-teal (215°) on the right
+  const hue = 195 + (mousePos.x / 100) * 20
+  const glassGradient = `
+    radial-gradient(circle 110px at ${mousePos.x}% ${mousePos.y}%,
+      rgba(255, 255, 255, 0.07) 0%,
+      transparent 60%
+    ),
+    radial-gradient(circle 240px at ${mousePos.x}% ${mousePos.y}%,
+      hsla(${hue}, 52%, 68%, 0.07) 0%,
+      transparent 70%
+    )
+  `
+
+  const liveTransform = isHovered
+    ? `perspective(1200px) rotateX(${tilt.rotX}deg) rotateY(${tilt.rotY}deg) scale(1.022)`
+    : undefined
+
+  return (
+    <div
+      ref={cardRef}
+      onClick={() => navigate(p.path)}
+      onMouseEnter={handleMouseEnter}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        background: isHovered ? 'var(--clr-surface-hover)' : 'var(--clr-surface)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+        border: `1px solid ${isHovered ? 'var(--clr-border-hover)' : 'var(--clr-border)'}`,
+        borderRadius: 'var(--radius-lg)',
+        padding: '1.5rem',
+        cursor: 'pointer',
+        boxShadow: isHovered ? 'var(--shadow-card-hover)' : 'var(--shadow-card)',
+        transform: liveTransform,
+        transition: 'transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease',
+        willChange: 'transform',
+        transformOrigin: 'center center',
+        transformStyle: 'preserve-3d' as const,
+      }}
+    >
+      {/* Glassmorphism light sheen — follows mouse */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 'inherit',
+          pointerEvents: 'none',
+          opacity: isHovered ? 1 : 0,
+          background: glassGradient,
+          transition: 'opacity 0.35s ease',
+          zIndex: 0,
+        }}
+      />
+
+      {/* Card content — sits above the gradient overlay */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+
+      {/* Meta row: prototype label + difficulty */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '0.55rem',
+      }}>
+        <span style={{
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase' as const,
+          color: 'var(--clr-text-muted)',
+        }}>
+          {label}
+        </span>
+        <DifficultyBadge level={p.difficulty} />
+      </div>
+
+      {/* Title */}
+      <h2 style={{
+        margin: '0 0 0.75rem',
+        fontSize: '1.05rem',
+        fontWeight: 700,
+        color: 'var(--clr-text-primary)',
+        lineHeight: 1.3,
+        letterSpacing: '-0.015em',
+      }}>
+        {title}
+      </h2>
+
+      {/* Paradigm */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '0.55rem',
+        marginBottom: '0.875rem',
+        paddingLeft: '0.75rem',
+        borderLeft: '2px solid rgba(78, 110, 126, 0.28)',
+      }}>
+        <p style={{
+          margin: 0,
+          color: 'var(--clr-accent-500)',
+          fontSize: '0.83rem',
+          fontWeight: 500,
+          lineHeight: 1.55,
+        }}>
+          {p.paradigm}
+        </p>
+      </div>
+
+      {/* Description */}
+      <p style={{
+        margin: p.notes ? '0 0 1rem' : 0,
+        color: 'var(--clr-text-secondary)',
+        fontSize: '0.875rem',
+        lineHeight: 1.7,
+      }}>
+        {p.description}
+      </p>
+
+      {/* Footer */}
+      {p.notes && (
+        <div style={{
+          paddingTop: '0.75rem',
+          borderTop: '1px solid var(--clr-border-secondary)',
+        }}>
+          <Link
+            to={`/notes/${p.notes}`}
+            style={{
+              fontSize: '0.78rem',
+              color: 'var(--clr-accent-500)',
+              fontWeight: 500,
+              transition: 'color 0.15s ease',
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-400)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
+          >
+            View notes →
+          </Link>
+        </div>
+      )}
+
+      </div>{/* end content wrapper */}
+    </div>
+  )
+}
+
+export default function LandingPage() {
   return (
     <div style={{ maxWidth: 880, margin: '0 auto', padding: '3rem 2rem' }}>
       {/* Header */}
@@ -207,122 +387,9 @@ export default function LandingPage() {
 
       {/* Prototype cards */}
       <div style={{ display: 'grid', gap: '0.875rem' }}>
-        {prototypes.filter((p) => p.visible).map((p) => {
-          const { label, title } = parsePrototypeName(p.name)
-          return (
-            <div
-              key={p.path}
-              onClick={() => navigate(p.path)}
-              style={{
-                background: 'var(--clr-surface)',
-                backdropFilter: 'blur(16px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-                border: '1px solid var(--clr-border)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '1.5rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: 'var(--shadow-card)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--clr-surface-hover)'
-                e.currentTarget.style.borderColor = 'var(--clr-border-hover)'
-                e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--clr-surface)'
-                e.currentTarget.style.borderColor = 'var(--clr-border)'
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = 'var(--shadow-card)'
-              }}
-            >
-              {/* Meta row: prototype label + difficulty (appears once only) */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '0.55rem',
-              }}>
-                <span style={{
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase' as const,
-                  color: 'var(--clr-text-muted)',
-                }}>
-                  {label}
-                </span>
-                <DifficultyBadge level={p.difficulty} />
-              </div>
-
-              {/* Title — the tech name without the "Prototype X —" prefix */}
-              <h2 style={{
-                margin: '0 0 0.75rem',
-                fontSize: '1.05rem',
-                fontWeight: 700,
-                color: 'var(--clr-text-primary)',
-                lineHeight: 1.3,
-                letterSpacing: '-0.015em',
-              }}>
-                {title}
-              </h2>
-
-              {/* Paradigm — architectural approach, visually distinct from description */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.55rem',
-                marginBottom: '0.875rem',
-                paddingLeft: '0.75rem',
-                borderLeft: '2px solid rgba(78, 110, 126, 0.28)',
-              }}>
-                <p style={{
-                  margin: 0,
-                  color: 'var(--clr-accent-500)',
-                  fontSize: '0.83rem',
-                  fontWeight: 500,
-                  lineHeight: 1.55,
-                }}>
-                  {p.paradigm}
-                </p>
-              </div>
-
-              {/* Description — full technical detail */}
-              <p style={{
-                margin: p.notes ? '0 0 1rem' : 0,
-                color: 'var(--clr-text-secondary)',
-                fontSize: '0.875rem',
-                lineHeight: 1.7,
-              }}>
-                {p.description}
-              </p>
-
-              {/* Footer — notes link only, difficulty already shown above */}
-              {p.notes && (
-                <div style={{
-                  paddingTop: '0.75rem',
-                  borderTop: '1px solid var(--clr-border-secondary)',
-                }}>
-                  <Link
-                    to={`/notes/${p.notes}`}
-                    style={{
-                      fontSize: '0.78rem',
-                      color: 'var(--clr-accent-500)',
-                      fontWeight: 500,
-                      transition: 'color 0.15s ease',
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-400)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
-                  >
-                    View notes →
-                  </Link>
-                </div>
-              )}
-            </div>
-          )
-        })}
+        {prototypes.filter((p) => p.visible).map((p) => (
+          <PrototypeCard key={p.path} p={p} />
+        ))}
       </div>
     </div>
   )
