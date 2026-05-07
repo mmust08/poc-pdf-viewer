@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import LandingPage from './pages/LandingPage'
 import PdfJsPrototype from './pages/PdfJsPrototype'
 import FabricPrototype from './pages/FabricPrototype'
@@ -10,7 +10,7 @@ import DecisionMatrixPage from './pages/DecisionMatrixPage'
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/prototype/pdfjs" element={<PdfJsPrototype />} />
@@ -21,6 +21,6 @@ export default function App() {
         <Route path="/prototype/nutrient" element={<NutrientPrototype />} />
         <Route path="/decision-matrix" element={<DecisionMatrixPage />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
