@@ -71,6 +71,11 @@ Ctrl+wheel captures the cursor position in PDF coordinate space before the scale
 ### Grab-to-pan
 Left-click drag moves the viewport by directly manipulating `scrollLeft`/`scrollTop` on the scroll container. A pointer-down/up distance check (5 px²) distinguishes a drag from a click-to-add-mark.
 
+### Smooth scroll normalisation
+All wheel events (non-Ctrl) are intercepted via a non-passive listener. `deltaY`/`deltaX` are converted to pixels (handling `DOM_DELTA_LINE` and `DOM_DELTA_PAGE` modes) and capped at `MAX_SCROLL_DELTA` (300 px) before being applied to `scrollTop`/`scrollLeft`. This prevents Logitech smooth-scrolling drivers from sending a single high-velocity event that scrolls the document to its extreme in one move, while leaving normal mice and trackpads unaffected.
+
+Ctrl+wheel zoom uses a separate delta accumulator (`wheelZoomAccumRef`). Each event adds to the accumulator; a zoom step only fires once the accumulated total crosses `ZOOM_WHEEL_THRESHOLD` (50 px), at which point the threshold amount is subtracted and any remainder carries forward. This means a Logitech smooth-scroll gesture that fires 20 small events produces the same number of zoom steps as an equivalent physical wheel rotation on a mechanical mouse.
+
 ### Mark persistence
 `useMarks` writes to `localStorage` as `pdfmarks:<filename>` on every change, and restores on PDF load. `saveAndReset()` persists marks before switching to a different PDF.
 
@@ -94,9 +99,12 @@ cy = (pageHeightPt - mark.y) * scale
 
 | Constant | Value | Purpose |
 |---|---|---|
-| `ZOOM_FACTOR` | 1.25 | 25% per zoom step |
-| `MIN_SCALE` | 0.25 | 25% minimum zoom |
+| `MIN_SCALE` | 0.1 | 10% minimum zoom |
 | `MAX_SCALE` | 50 | 5 000% maximum zoom |
+| `ZOOM_STEPS` | [0.1 … 50.0] | Discrete step list for Ctrl+wheel and zoom buttons |
+| `ZOOM_PRESETS` | 50–400 % | Dropdown preset percentages |
+| `CONTAINER_H_PADDING` | 32 px | Horizontal padding subtracted when computing fit scales |
+| `CONTAINER_V_PADDING` | 16 px | Vertical padding subtracted when computing fit scales |
 | `MAX_CANVAS_DIM` | 16 384 | Browser canvas pixel limit per axis |
 | `PAGE_GAP` | 12 px | Gap between pages |
 | `MARGIN_FRACTION` | 0.75 | Pre-render margin as fraction of viewport |
@@ -104,3 +112,14 @@ cy = (pageHeightPt - mark.y) * scale
 | `RERENDER_THRESHOLD_PX` | 200 | Scroll distance before triggering re-render |
 | `VIRTUALIZATION_VIEWPORTS` | 2 | Pages mounted beyond the visible viewport |
 | `ZOOM_RENDER_DEBOUNCE_MS` | 150 | Debounce after zoom before issuing render |
+| `MAX_SCROLL_DELTA` | 300 px | Cap per wheel event — prevents Logitech smooth-scroll runaway |
+| `ZOOM_WHEEL_THRESHOLD` | 50 px | Accumulated Ctrl+wheel delta required to advance one zoom step |
+
+---
+
+## Audit Trail
+
+| Date | Change |
+|---|---|
+| 2026-05-07 | Added smooth scroll normalisation — intercept non-Ctrl wheel events, cap delta at 300 px per event to prevent Logitech smooth-scrolling runaway (`PdfJsViewer.tsx`) |
+| 2026-05-07 | Added Ctrl+wheel zoom accumulator — zoom step only fires after 50 px accumulated delta, preventing Logitech smooth-scroll from racing through multiple zoom steps per gesture (`PdfJsViewer.tsx`) |

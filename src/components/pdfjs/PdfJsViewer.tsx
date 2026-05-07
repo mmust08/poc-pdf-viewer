@@ -52,6 +52,8 @@ const MARGIN_MIN_PX = 800
 // far inside the already-rendered region.
 const RERENDER_THRESHOLD_PX = 200
 const ZOOM_RENDER_DEBOUNCE_MS = 150
+const MAX_SCROLL_DELTA = 300  // px — caps Logitech smooth-scroll runaway events
+const ZOOM_WHEEL_THRESHOLD = 50 // accumulated px before advancing one zoom step
 
 // Page virtualisation: only mount PageCanvas for pages within this many
 // viewport-heights of the visible area.
@@ -76,6 +78,7 @@ export default function PdfJsViewer() {
   const scrollRafRef = useRef<number | null>(null)
   const pendingZoomRef = useRef<PendingZoom | null>(null)
   const panRef = useRef<{ startX: number; startY: number; scrollLeft: number; scrollTop: number } | null>(null)
+  const wheelZoomAccumRef = useRef(0) // accumulated Ctrl+wheel delta for smooth-scroll throttling
 
   const [isPanning, setIsPanning] = useState(false)
 
@@ -183,14 +186,33 @@ const [currentPage, setCurrentPage] = useState(1)
     const container = containerRef.current
     if (!container) return
 
+    function normalizeScrollDelta(delta: number, mode: number, dim: number): number {
+      if (mode === 1) delta *= 18        // DOM_DELTA_LINE → px
+      else if (mode === 2) delta *= dim  // DOM_DELTA_PAGE → px
+      return Math.sign(delta) * Math.min(Math.abs(delta), MAX_SCROLL_DELTA)
+    }
+
     function onWheel(e: WheelEvent) {
-      if (!e.ctrlKey && !e.metaKey) return
+      if (!e.ctrlKey && !e.metaKey) {
+        if (!container) return
+        e.preventDefault()
+        container.scrollTop  += normalizeScrollDelta(e.deltaY, e.deltaMode, container.clientHeight)
+        container.scrollLeft += normalizeScrollDelta(e.deltaX, e.deltaMode, container.clientWidth)
+        return
+      }
       if (!container) return
       e.preventDefault()
 
+      // Accumulate delta so that Logitech smooth-scroll events require the
+      // same total movement as a single mechanical click before stepping.
+      wheelZoomAccumRef.current += e.deltaY
+      if (Math.abs(wheelZoomAccumRef.current) < ZOOM_WHEEL_THRESHOLD) return
+      const direction = wheelZoomAccumRef.current > 0 ? 1 : -1
+      wheelZoomAccumRef.current -= direction * ZOOM_WHEEL_THRESHOLD
+
       const oldScale = wheelScaleRef.current
       let newScale: number
-      if (e.deltaY < 0) {
+      if (direction < 0) {
         newScale = ZOOM_STEPS.find((s) => s > oldScale + 1e-9) ?? MAX_SCALE
       } else {
         newScale = [...ZOOM_STEPS].reverse().find((s) => s < oldScale - 1e-9) ?? MIN_SCALE
