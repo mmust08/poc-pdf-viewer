@@ -8,7 +8,7 @@ const components: Components = {
   h1: ({ children }) => (
     <h1 style={{
       color: 'var(--clr-text-primary)',
-      borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+      borderBottom: '1px solid rgba(78, 110, 126, 0.2)',
       paddingBottom: '0.5rem',
       marginTop: '1.5rem',
       marginBottom: '1rem',
@@ -58,7 +58,7 @@ const components: Components = {
     </p>
   ),
   a: ({ href, children }) => (
-    <a href={href} style={{ color: 'var(--clr-purple-400)' }} target="_blank" rel="noreferrer">
+    <a href={href} style={{ color: 'var(--clr-accent-400)' }} target="_blank" rel="noreferrer">
       {children}
     </a>
   ),
@@ -69,15 +69,15 @@ const components: Components = {
         <code
           style={{
             fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-            background: 'rgba(0, 0, 0, 0.35)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
+            background: 'rgba(78, 110, 126, 0.06)',
+            border: '1px solid rgba(78, 110, 126, 0.16)',
             display: 'block',
             padding: '1rem 1.25rem',
             borderRadius: 10,
             overflowX: 'auto',
             fontSize: '0.85rem',
             lineHeight: 1.65,
-            color: '#d4d0f0',
+            color: 'var(--clr-text-primary)',
           }}
           className={className}
         >
@@ -87,13 +87,13 @@ const components: Components = {
     }
     return (
       <code style={{
-        background: 'rgba(139, 92, 246, 0.12)',
-        border: '1px solid rgba(139, 92, 246, 0.2)',
+        background: 'rgba(78, 110, 126, 0.08)',
+        border: '1px solid rgba(78, 110, 126, 0.18)',
         padding: '1px 6px',
         borderRadius: 4,
         fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
         fontSize: '0.85em',
-        color: 'var(--clr-purple-300)',
+        color: 'var(--clr-accent-500)',
       }}>
         {children}
       </code>
@@ -101,8 +101,8 @@ const components: Components = {
   },
   pre: ({ children }) => (
     <pre style={{
-      background: 'rgba(0, 0, 0, 0.35)',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
+      background: 'rgba(78, 110, 126, 0.06)',
+      border: '1px solid rgba(78, 110, 126, 0.16)',
       padding: '1rem 1.25rem',
       borderRadius: 10,
       overflowX: 'auto',
@@ -122,9 +122,9 @@ const components: Components = {
     <th style={{
       padding: '0.6rem 1rem',
       textAlign: 'left',
-      borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
-      background: 'rgba(139, 92, 246, 0.06)',
-      color: 'var(--clr-purple-300)',
+      borderBottom: '1px solid rgba(78, 110, 126, 0.2)',
+      background: 'rgba(78, 110, 126, 0.06)',
+      color: 'var(--clr-accent-500)',
       fontWeight: 600,
       fontSize: '0.82rem',
       letterSpacing: '0.03em',
@@ -135,7 +135,7 @@ const components: Components = {
   td: ({ children }) => (
     <td style={{
       padding: '0.6rem 1rem',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+      borderBottom: '1px solid var(--clr-border-secondary)',
       color: 'var(--clr-text-secondary)',
       fontSize: '0.875rem',
     }}>
@@ -144,7 +144,7 @@ const components: Components = {
   ),
   tr: ({ children }) => (
     <tr
-      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(139, 92, 246, 0.04)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(78, 110, 126, 0.04)' }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
     >
       {children}
@@ -152,7 +152,7 @@ const components: Components = {
   ),
   blockquote: ({ children }) => (
     <blockquote style={{
-      borderLeft: '3px solid rgba(139, 92, 246, 0.4)',
+      borderLeft: '3px solid rgba(78, 110, 126, 0.4)',
       marginLeft: 0,
       paddingLeft: '1rem',
       color: 'var(--clr-text-muted)',
@@ -227,7 +227,7 @@ export default function NotesPage() {
             fontWeight: 500,
             transition: 'color 0.15s ease',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-purple-400)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--clr-accent-500)' }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--clr-text-muted)' }}
         >
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -269,7 +269,7 @@ export default function NotesPage() {
             }}>
               <h1 style={{
                 color: 'var(--clr-text-primary)',
-                borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+                borderBottom: '1px solid rgba(78, 110, 126, 0.2)',
                 paddingBottom: '0.75rem',
                 marginTop: 0,
                 marginBottom: '1.5rem',

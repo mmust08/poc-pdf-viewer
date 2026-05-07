@@ -453,33 +453,34 @@ const [currentPage, setCurrentPage] = useState(1)
       {/* Toolbar */}
       <header
         style={{
-          background: 'rgba(10, 9, 18, 0.92)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          background: 'rgba(255, 255, 255, 0.82)',
+          backdropFilter: 'blur(20px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(160%)',
           padding: '0.55rem 1.25rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.65rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.07)',
+          boxShadow: 'inset 0 -1px 0 rgba(255, 255, 255, 0.6), 0 1px 8px rgba(0, 0, 0, 0.05)',
           flexShrink: 0,
           flexWrap: 'wrap',
         }}
       >
-        <Link to="/" style={{ color: '#a78bfa', flexShrink: 0, fontSize: '0.875rem', fontWeight: 500 }}>
+        <Link to="/" style={{ color: 'var(--clr-accent-500)', flexShrink: 0, fontSize: '0.875rem', fontWeight: 500 }}>
           ← Back
         </Link>
-        <h2 style={{ margin: 0, fontSize: '0.875rem', flexShrink: 0, color: '#a9a7c0', fontWeight: 500 }}>
+        <h2 style={{ margin: 0, fontSize: '0.875rem', flexShrink: 0, color: 'var(--clr-text-secondary)', fontWeight: 500 }}>
           Prototype 1.1 — PDF.js · {pdfName}
         </h2>
         <div style={{ flex: 1 }} />
 
         {pageCount > 0 && (
-          <span style={{ color: '#67647c', fontSize: '0.82rem', flexShrink: 0 }}>
+          <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.82rem', flexShrink: 0 }}>
             Page {currentPage} / {pageCount}
           </span>
         )}
 
-        <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
 
         {/* Zoom controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
@@ -509,8 +510,8 @@ const [currentPage, setCurrentPage] = useState(1)
               }
             }}
             style={{
-              background: 'rgba(139, 92, 246, 0.1)', color: '#a9a7c0',
-              border: '1px solid rgba(139, 92, 246, 0.2)',
+              background: 'rgba(78, 110, 126, 0.08)', color: 'var(--clr-text-secondary)',
+              border: '1px solid rgba(78, 110, 126, 0.18)',
               borderRadius: '5px', padding: '0.32rem 0.5rem',
               fontSize: '0.83rem', cursor: 'pointer', outline: 'none',
             }}
@@ -530,7 +531,7 @@ const [currentPage, setCurrentPage] = useState(1)
           <button onClick={() => handleZoom('in')} style={btnStyle} title="Zoom in (Ctrl++)">+</button>
         </div>
 
-        <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
+        <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
 
         <input
           ref={fileInputRef}
@@ -545,8 +546,8 @@ const [currentPage, setCurrentPage] = useState(1)
 
         {userMarks.length > 0 && (
           <>
-            <div style={{ width: 1, height: 20, background: 'rgba(255, 255, 255, 0.08)' }} />
-            <span style={{ color: '#67647c', fontSize: '0.82rem' }}>
+            <div style={{ width: 1, height: 20, background: 'rgba(0, 0, 0, 0.09)' }} />
+            <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.82rem' }}>
               {userMarks.length} user mark{userMarks.length !== 1 ? 's' : ''}
             </span>
             <button
@@ -559,7 +560,7 @@ const [currentPage, setCurrentPage] = useState(1)
           </>
         )}
 
-        <span style={{ color: '#67647c', fontSize: '0.78rem', flexShrink: 0 }}>
+        <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.78rem', flexShrink: 0 }}>
           Click to place mark · Drag to pan · Ctrl+wheel to zoom · Ctrl+0 actual size
         </span>
       </header>
@@ -575,7 +576,7 @@ const [currentPage, setCurrentPage] = useState(1)
         style={{
           flex: 1,
           overflow: 'auto',
-          background: '#3c3a48',
+          background: '#D6D2CA',
           padding: '8px 0',
           position: 'relative',
           cursor: isPanning ? 'grabbing' : 'grab',
@@ -588,7 +589,7 @@ const [currentPage, setCurrentPage] = useState(1)
               top: '50%',
               left: '50%',
               transform: 'translate(-50%,-50%)',
-              color: 'white',
+              color: 'var(--clr-text-secondary)',
               zIndex: 10,
             }}
           >
@@ -888,9 +889,9 @@ function PageCanvas({
 }
 
 const btnStyle: React.CSSProperties = {
-  background: 'rgba(139, 92, 246, 0.1)',
-  color: '#a78bfa',
-  border: '1px solid rgba(139, 92, 246, 0.2)',
+  background: 'rgba(78, 110, 126, 0.08)',
+  color: 'var(--clr-accent-500)',
+  border: '1px solid rgba(78, 110, 126, 0.18)',
   borderRadius: 5,
   padding: '0.32rem 0.7rem',
   cursor: 'pointer',
