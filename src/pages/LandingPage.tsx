@@ -74,6 +74,32 @@ export default function LandingPage() {
         zoom, and pan. Each prototype uses 5 hardcoded marks in PDF coordinate space.
       </p>
 
+      <div style={{ marginBottom: '2rem' }}>
+        <Link
+          to="/decision-matrix"
+          style={{
+            display: 'inline-block',
+            padding: '0.75rem 1.5rem',
+            background: '#2a4080',
+            border: '1px solid #3d5b99',
+            borderRadius: 6,
+            color: '#7eb8f7',
+            textDecoration: 'none',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#3d5b99'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#2a4080'
+          }}
+        >
+          📊 View Decision Matrix
+        </Link>
+      </div>
+
       <div style={{ display: 'grid', gap: '1.5rem' }}>
         {prototypes.filter(p => p.visible).map((p) => (
           <div
