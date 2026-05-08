@@ -148,6 +148,7 @@
     left: 0;
     overflow: hidden;
     z-index: 1;
+    pointer-events: none;
 }
 
 .pdfjs-stale-wrap {
@@ -169,6 +170,7 @@
     top: 0;
     left: 0;
     pointer-events: all;
+    z-index: 2;
 }
 
 .pdfjs-mark {

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { Link } from "react-router-dom"
 import * as pdfjsLib from "pdfjs-dist"
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist"
-import type { PdfMark } from "../../types/marks"
+import { HARDCODED_MARKS, type PdfMark } from "../../types/marks"
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url"
 import { useCanvasMarks } from "../../hooks/useCanvasMarks"
 import { MarkInfoPanel } from "../MarkInfoPanel"
@@ -371,7 +371,10 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
         const rect = svg.getBoundingClientRect()
         const ox = e.clientX - rect.left
         const oy = e.clientY - rect.top
-        return { nativeX: ox / scaleX, nativeY: oy / scaleY, offsetX: ox, offsetY: oy }
+        // PDF coordinate space: origin is bottom-left, Y grows upward (matches Prototype 1).
+        const nativeX = ox / scaleX
+        const nativeY = native ? native.height - oy / scaleY : oy / scaleY
+        return { nativeX, nativeY, offsetX: ox, offsetY: oy }
     }
 
     function handleMarkPointerDown(e: React.PointerEvent<SVGGElement>, id: string) {
@@ -469,21 +472,27 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
                     Upload PDF
                 </button>
 
-                {marks.length > 0 && (
-                    <>
-                        <div className="pdfjs-divider" />
-                        <span className="pdfjs-marks-count">
-                            {marks.length} user mark{marks.length !== 1 ? 's' : ''}
-                        </span>
-                        <button
-                            onClick={clearMarks}
-                            className="pdfjs-clear-btn"
-                            title="Remove all user marks"
-                        >
-                            Clear all
-                        </button>
-                    </>
-                )}
+                {(() => {
+                    const userMarkCount = marks.filter(
+                        (m) => !HARDCODED_MARKS.some((h) => h.id === m.id),
+                    ).length
+                    if (userMarkCount === 0) return null
+                    return (
+                        <>
+                            <div className="pdfjs-divider" />
+                            <span className="pdfjs-marks-count">
+                                {userMarkCount} user mark{userMarkCount !== 1 ? 's' : ''}
+                            </span>
+                            <button
+                                onClick={clearMarks}
+                                className="pdfjs-clear-btn"
+                                title="Remove all user marks"
+                            >
+                                Clear all
+                            </button>
+                        </>
+                    )
+                })()}
 
                 <span className="pdfjs-hint">
                     Click to place mark · Drag to pan · Ctrl+wheel to zoom
@@ -515,10 +524,12 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
                         >
                             {marks.map((mark: PdfMark) => {
                                 const screenX = mark.x * scaleX
-                                const screenY = mark.y * scaleY
+                                const screenY = (native.height - mark.y) * scaleY
                                 const isSelected = mark.id === selectedId
                                 const dim = selectedId !== null && !isSelected
                                 const isDragging = draggingMarkId === mark.id
+                                const isUser = !HARDCODED_MARKS.some((h) => h.id === mark.id)
+                                const fillColor = isUser ? 'rgba(80,180,255,0.9)' : 'rgba(255,80,80,0.85)'
                                 return (
                                     <g
                                         key={mark.id}
@@ -534,7 +545,7 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
                                             <circle
                                                 cx={screenX}
                                                 cy={screenY}
-                                                r={12}
+                                                r={14}
                                                 fill="none"
                                                 stroke="white"
                                                 strokeWidth={3}
@@ -543,17 +554,18 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
                                         <circle
                                             cx={screenX}
                                             cy={screenY}
-                                            r={8}
-                                            fill={mark.color}
-                                            stroke="#111"
-                                            strokeWidth={1}
+                                            r={10}
+                                            fill={fillColor}
+                                            stroke="white"
+                                            strokeWidth={2}
                                         />
                                         <text
-                                            x={screenX + 12}
+                                            x={screenX + 14}
                                             y={screenY + 5}
-                                            fontSize={14}
-                                            fill="black"
-                                            stroke="white"
+                                            fontSize={12}
+                                            fontWeight="bold"
+                                            fill="white"
+                                            stroke="black"
                                             strokeWidth={3}
                                             paintOrder="stroke"
                                         >
@@ -564,11 +576,11 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
                             })}
                         </svg>
                     )}
-                    {selectedMark && (
+                    {selectedMark && native && (
                         <MarkInfoPanel
                             mark={selectedMark}
                             screenX={selectedMark.x * scaleX}
-                            screenY={selectedMark.y * scaleY}
+                            screenY={(native.height - selectedMark.y) * scaleY}
                             onClose={() => selectMark(null)}
                         />
                     )}
