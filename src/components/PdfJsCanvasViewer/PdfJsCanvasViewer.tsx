@@ -341,12 +341,24 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
             const rect = el!.getBoundingClientRect()
             const cursorX = e.clientX - rect.left
             const cursorY = e.clientY - rect.top
-            zoomAnchorRef.current = {
-                oldScale,
-                cursorX,
-                cursorY,
-                scrollLeft: el!.scrollLeft,
-                scrollTop: el!.scrollTop,
+            // Preserve the first event's oldScale + scrollLeft/scrollTop for the whole burst.
+            // Smooth-scroll devices fire many threshold-crossings per frame; React batches them
+            // and only commits once. If we overwrote the anchor every event, oldScale would
+            // advance with scaleRef but scrollLeft would stay at its pre-burst DOM value (the
+            // layout effect hasn't run yet), so factor = scale/oldScale would only cover the
+            // last step while scrollLeft baselined the first — cursor anchor visibly drifts.
+            // Keeping the first triplet means factor covers the full cumulative zoom.
+            if (zoomAnchorRef.current) {
+                zoomAnchorRef.current.cursorX = cursorX
+                zoomAnchorRef.current.cursorY = cursorY
+            } else {
+                zoomAnchorRef.current = {
+                    oldScale,
+                    cursorX,
+                    cursorY,
+                    scrollLeft: el!.scrollLeft,
+                    scrollTop: el!.scrollTop,
+                }
             }
             // Sync scaleRef immediately. Without this, two threshold-crossing events that fire
             // before React commits would both read the same oldScale and both call setScale
