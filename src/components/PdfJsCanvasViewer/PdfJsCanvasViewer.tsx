@@ -26,6 +26,10 @@ const PAGE_MARGIN = 20
 // Safety net: drop the wrap if the renderer never reports idle (e.g., render error path).
 // Picked well above a typical re-tile budget so it never fights the real signal.
 const SNAPSHOT_MAX_LIFETIME_MS = 4000
+// Cap one wheel event's contribution so a smooth-scroll mouse can't dump 1000+ px in a single tick.
+const MAX_SCROLL_DELTA = 300
+// Accumulated wheel delta required to advance one zoom step — tune if zoom feels sluggish or twitchy.
+const ZOOM_WHEEL_THRESHOLD = 50
 
 export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
     const tileLayerRef = useRef<HTMLDivElement | null>(null)
@@ -284,6 +288,15 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
     }, [updateTiles])
 
     // Ctrl/Cmd + wheel = zoom (anchored at cursor). Plain wheel = browser-native scroll.
+    //
+    // Smooth-scroll mice (Logitech free-spin, Magic Mouse, trackpads) fire many small wheel
+    // events per flick. Stepping the zoom on every event would jump 5+ levels at once. We
+    // accumulate delta and only advance one step per ZOOM_WHEEL_THRESHOLD pixels — same
+    // gating Prototype 1.1 uses.
+    const wheelZoomAccumRef = useRef(0)
+    const scaleRef = useRef(scale)
+    scaleRef.current = scale
+
     useEffect(() => {
         const el = scrollRef.current
         if (!el) return
@@ -291,22 +304,55 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
         function onWheel(e: WheelEvent) {
             if (!e.ctrlKey && !e.metaKey) return
             e.preventDefault()
+
+            // Normalize deltaMode to pixels and cap per-event contribution.
+            let delta = e.deltaY
+            if (e.deltaMode === 1) delta *= 18
+            else if (e.deltaMode === 2) delta *= el!.clientHeight
+            delta = Math.sign(delta) * Math.min(Math.abs(delta), MAX_SCROLL_DELTA)
+
+            // Drop the carry when the user reverses direction — without this, the up-to-49px
+            // of clamped forward carry has to be neutralized by reverse events before any
+            // zoom-out fires, which feels like the wheel is stuck.
+            if (delta !== 0
+                && wheelZoomAccumRef.current !== 0
+                && Math.sign(delta) !== Math.sign(wheelZoomAccumRef.current)) {
+                wheelZoomAccumRef.current = 0
+            }
+
+            wheelZoomAccumRef.current += delta
+            if (Math.abs(wheelZoomAccumRef.current) < ZOOM_WHEEL_THRESHOLD) return
+            const direction = wheelZoomAccumRef.current > 0 ? 1 : -1
+
+            const oldScale = scaleRef.current
+            const factor = direction < 0 ? 1.1 : 1 / 1.1
+            const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, oldScale * factor))
+            if (newScale === oldScale) {
+                // At zoom limit — reset so reversing direction responds immediately.
+                wheelZoomAccumRef.current = 0
+                return
+            }
+            // Consume one threshold unit; clamp carry so a runaway delta can't keep firing
+            // forward steps after the user has clearly stopped.
+            wheelZoomAccumRef.current -= direction * ZOOM_WHEEL_THRESHOLD
+            wheelZoomAccumRef.current = Math.sign(wheelZoomAccumRef.current)
+                * Math.min(Math.abs(wheelZoomAccumRef.current), ZOOM_WHEEL_THRESHOLD - 1)
+
             const rect = el!.getBoundingClientRect()
             const cursorX = e.clientX - rect.left
             const cursorY = e.clientY - rect.top
-            setScale((s) => {
-                const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
-                const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, s * factor))
-                if (newScale === s) return s
-                zoomAnchorRef.current = {
-                    oldScale: s,
-                    cursorX,
-                    cursorY,
-                    scrollLeft: el!.scrollLeft,
-                    scrollTop: el!.scrollTop,
-                }
-                return newScale
-            })
+            zoomAnchorRef.current = {
+                oldScale,
+                cursorX,
+                cursorY,
+                scrollLeft: el!.scrollLeft,
+                scrollTop: el!.scrollTop,
+            }
+            // Sync scaleRef immediately. Without this, two threshold-crossing events that fire
+            // before React commits would both read the same oldScale and both call setScale
+            // with the same value — the second step would silently drop.
+            scaleRef.current = newScale
+            setScale(newScale)
         }
 
         el.addEventListener("wheel", onWheel, { passive: false })
