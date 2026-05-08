@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
+import { ThemeToggle } from "../ThemeToggle"
 import * as pdfjsLib from "pdfjs-dist"
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist"
 import { HARDCODED_MARKS, type PdfMark } from "../../types/marks"
@@ -493,6 +494,8 @@ export function PdfJsCanvasViewer({ pdfUrl, onFileChange }: Props) {
                         </>
                     )
                 })()}
+
+                <ThemeToggle />
 
                 <span className="pdfjs-hint">
                     Click to place mark · Drag to pan · Ctrl+wheel to zoom

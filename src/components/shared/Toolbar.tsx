@@ -50,21 +50,30 @@ export default function Toolbar({
   return (
     <header
       style={{
-        background: '#16213e',
+        background: 'rgba(255, 255, 255, 0.80)',
+        backdropFilter: 'blur(20px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(160%)',
         padding: '0.55rem 1.25rem',
         display: 'flex',
         alignItems: 'center',
         gap: '0.65rem',
-        borderBottom: '1px solid #2a4080',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.07)',
+        boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.6), 0 1px 8px rgba(0,0,0,0.05)',
         flexShrink: 0,
         flexWrap: 'wrap',
+        fontFamily: "'Manrope', system-ui, -apple-system, sans-serif",
       }}
     >
-      <Link to="/" style={{ color: '#7eb8f7', flexShrink: 0 }}>
+      <Link
+        to="/"
+        style={{ color: '#4E6E7E', flexShrink: 0, fontSize: '0.875rem', fontWeight: 500, transition: 'color 0.15s ease' }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = '#6D90A2' }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = '#4E6E7E' }}
+      >
         ← Back
       </Link>
 
-      <h2 style={{ margin: 0, fontSize: '0.9rem', flexShrink: 0, color: '#ccc' }}>{title}</h2>
+      <h2 style={{ margin: 0, fontSize: '0.875rem', flexShrink: 0, color: '#5C5753', fontWeight: 500 }}>{title}</h2>
 
       <div style={{ flex: 1 }} />
 
@@ -94,12 +103,14 @@ export default function Toolbar({
               style={{
                 width: 48,
                 textAlign: 'center',
-                background: '#0f3460',
-                color: 'white',
-                border: '1px solid #7eb8f7',
-                borderRadius: 4,
+                background: 'rgba(255,255,255,0.9)',
+                color: '#1C1A17',
+                border: '1px solid rgba(78, 110, 126, 0.38)',
+                borderRadius: 5,
                 padding: '0.2rem 0.3rem',
                 fontSize: '0.85rem',
+                fontFamily: 'inherit',
+                outline: 'none',
               }}
             />
           ) : (
@@ -109,13 +120,14 @@ export default function Toolbar({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#e0e0e0',
+                color: '#5C5753',
                 fontSize: '0.85rem',
                 cursor: 'pointer',
                 padding: '0.2rem 0.3rem',
                 borderRadius: 4,
                 minWidth: 70,
                 textAlign: 'center',
+                fontFamily: 'inherit',
               }}
             >
               {currentPage} / {pageCount}
@@ -133,7 +145,7 @@ export default function Toolbar({
         </div>
       )}
 
-      {pageCount > 1 && <div style={{ width: 1, height: 24, background: '#2a4080' }} />}
+      {pageCount > 1 && <div style={{ width: 1, height: 20, background: 'rgba(0,0,0,0.09)' }} />}
 
       {/* PDF upload */}
       <input
@@ -145,18 +157,18 @@ export default function Toolbar({
       />
       <button
         onClick={() => fileInputRef.current?.click()}
-        style={btnStyle('#2a4080', false)}
+        style={btnStyle(false)}
         title="Upload a PDF file from your computer"
       >
         Upload PDF
       </button>
 
-      <div style={{ width: 1, height: 24, background: '#2a4080' }} />
+      <div style={{ width: 1, height: 20, background: 'rgba(0,0,0,0.09)' }} />
 
       {/* Add mark toggle */}
       <button
         onClick={onToggleAdding}
-        style={btnStyle(isAdding ? '#1a6b3a' : '#2a4080', false, isAdding ? '#4ade80' : undefined)}
+        style={isAdding ? btnStyleActive() : btnStyle(false)}
         title={isAdding ? 'Click on the PDF to place a mark. Click again to exit.' : 'Enter add-mark mode'}
       >
         {isAdding ? '✚ Adding… (click PDF)' : '✚ Add Mark'}
@@ -164,12 +176,12 @@ export default function Toolbar({
 
       {userMarkCount > 0 && (
         <>
-          <span style={{ color: '#aaa', fontSize: '0.82rem' }}>
+          <span style={{ color: '#9E9A95', fontSize: '0.82rem' }}>
             {userMarkCount} user mark{userMarkCount !== 1 ? 's' : ''} (this page)
           </span>
           <button
             onClick={onClearUserMarks}
-            style={btnStyle('#6b1a1a', false)}
+            style={btnStyleDanger()}
             title="Remove all user-placed marks (all pages)"
           >
             Clear all
@@ -178,36 +190,72 @@ export default function Toolbar({
       )}
 
       {hint && !isAdding && (
-        <span style={{ color: '#555', fontSize: '0.8rem', flexShrink: 0 }}>{hint}</span>
+        <span style={{ color: '#B0ACA7', fontSize: '0.8rem', flexShrink: 0 }}>{hint}</span>
       )}
     </header>
   )
 }
 
-function btnStyle(bg: string, _disabled: boolean, color?: string): React.CSSProperties {
+function btnStyle(_disabled: boolean): React.CSSProperties {
   return {
-    background: bg,
-    color: color ?? 'white',
-    border: '1px solid rgba(255,255,255,0.12)',
+    background: 'rgba(78, 110, 126, 0.08)',
+    color: '#4E6E7E',
+    border: '1px solid rgba(78, 110, 126, 0.18)',
     borderRadius: 5,
     padding: '0.32rem 0.7rem',
     cursor: 'pointer',
     fontSize: '0.83rem',
     fontWeight: 500,
     flexShrink: 0,
+    fontFamily: 'inherit',
+    transition: 'all 0.15s ease',
+  }
+}
+
+function btnStyleActive(): React.CSSProperties {
+  return {
+    background: 'rgba(74, 128, 101, 0.10)',
+    color: '#3C7A58',
+    border: '1px solid rgba(74, 128, 101, 0.28)',
+    borderRadius: 5,
+    padding: '0.32rem 0.7rem',
+    cursor: 'pointer',
+    fontSize: '0.83rem',
+    fontWeight: 500,
+    flexShrink: 0,
+    fontFamily: 'inherit',
+    transition: 'all 0.15s ease',
+  }
+}
+
+function btnStyleDanger(): React.CSSProperties {
+  return {
+    background: 'rgba(160, 60, 60, 0.07)',
+    color: '#9A4A4A',
+    border: '1px solid rgba(160, 60, 60, 0.16)',
+    borderRadius: 5,
+    padding: '0.32rem 0.7rem',
+    cursor: 'pointer',
+    fontSize: '0.83rem',
+    fontWeight: 500,
+    flexShrink: 0,
+    fontFamily: 'inherit',
+    transition: 'all 0.15s ease',
   }
 }
 
 function navBtnStyle(disabled: boolean): React.CSSProperties {
   return {
-    background: disabled ? '#111827' : '#2a4080',
-    color: disabled ? '#444' : 'white',
-    border: '1px solid rgba(255,255,255,0.12)',
+    background: disabled ? 'rgba(0,0,0,0.04)' : 'rgba(78, 110, 126, 0.08)',
+    color: disabled ? '#C0BCB8' : '#4E6E7E',
+    border: `1px solid ${disabled ? 'rgba(0,0,0,0.06)' : 'rgba(78, 110, 126, 0.18)'}`,
     borderRadius: 5,
     padding: '0.2rem 0.55rem',
     cursor: disabled ? 'default' : 'pointer',
     fontSize: '1.1rem',
     lineHeight: 1,
     flexShrink: 0,
+    fontFamily: 'inherit',
+    transition: 'all 0.15s ease',
   }
 }

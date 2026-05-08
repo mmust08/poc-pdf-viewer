@@ -123,3 +123,5 @@ cy = (pageHeightPt - mark.y) * scale
 |---|---|
 | 2026-05-07 | Added smooth scroll normalisation — intercept non-Ctrl wheel events, cap delta at 300 px per event to prevent Logitech smooth-scrolling runaway (`PdfJsViewer.tsx`) |
 | 2026-05-07 | Added Ctrl+wheel zoom accumulator — zoom step only fires after 50 px accumulated delta, preventing Logitech smooth-scroll from racing through multiple zoom steps per gesture (`PdfJsViewer.tsx`) |
+| 2026-05-07 | Fix Ctrl+wheel zoom accumulator drain at MIN/MAX_SCALE — moved threshold subtraction after limit guard and reset accumulator on limit hit; fixes inverted direction and broken zoom after saturating at extremes (`PdfJsViewer.tsx`) |
+| 2026-05-07 | Fix Ctrl+wheel zoom carry buildup — clamp carry to ±(ZOOM_WHEEL_THRESHOLD-1) after each step fires; prevents Logitech free-spin large-delta events from accumulating enough carry to fire reversed zoom steps when the user changes scroll direction (`PdfJsViewer.tsx`) |
