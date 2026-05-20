@@ -63,4 +63,4 @@ Marks are defined in PDF user-space coordinates (points, origin bottom-left per 
 - [ ] Three prototype routes implemented and working
 - [ ] Marks visible and correctly anchored at 1x, 2x, and 8x zoom in all three prototypes
 - [ ] `NOTES_PROTO1.md`, `NOTES_PROTO2.md`, `NOTES_PROTO3.md` written with evaluation observations
-- [ ] Technology choice aligned with Alexander Poopeiko or Andreas Edal Pedersen
+
