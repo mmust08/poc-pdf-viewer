@@ -8,6 +8,7 @@ import EmbedPdfPrototype from './pages/EmbedPdfPrototype'
 import PdfiumRawPrototype from './pages/PdfiumRawPrototype'
 import NutrientPrototype from './pages/NutrientPrototype'
 import DecisionMatrixPage from './pages/DecisionMatrixPage'
+import PdfJsVariantsMatrixPage from './pages/PdfJsVariantsMatrixPage'
 import NotesPage from './pages/NotesPage'
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/prototype/pdfium-raw" element={<PdfiumRawPrototype />} />
         <Route path="/prototype/nutrient" element={<NutrientPrototype />} />
         <Route path="/decision-matrix" element={<DecisionMatrixPage />} />
+        <Route path="/decision-matrix/pdfjs-variants" element={<PdfJsVariantsMatrixPage />} />
         <Route path="/notes/:filename" element={<NotesPage />} />
       </Routes>
     </HashRouter>

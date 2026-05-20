@@ -383,6 +383,41 @@ export default function LandingPage() {
           </svg>
           View Decision Matrix
         </Link>
+
+        <Link
+          to="/decision-matrix/pdfjs-variants"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            padding: '0.5rem 1rem',
+            background: 'rgba(74, 128, 101, 0.09)',
+            border: '1px solid rgba(74, 128, 101, 0.22)',
+            borderRadius: 8,
+            color: '#4A8065',
+            fontWeight: 500,
+            fontSize: '0.875rem',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(74, 128, 101, 0.15)'
+            e.currentTarget.style.borderColor = 'rgba(74, 128, 101, 0.38)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(74, 128, 101, 0.09)'
+            e.currentTarget.style.borderColor = 'rgba(74, 128, 101, 0.22)'
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="0.5" y="0.5" width="3.5" height="3.5" rx="0.5" fill="currentColor" opacity="0.8"/>
+            <rect x="5" y="0.5" width="3.5" height="3.5" rx="0.5" fill="currentColor" opacity="0.8"/>
+            <rect x="0.5" y="5" width="3.5" height="3.5" rx="0.5" fill="currentColor" opacity="0.8"/>
+            <rect x="5" y="5" width="3.5" height="3.5" rx="0.5" fill="currentColor" opacity="0.8"/>
+            <rect x="0.5" y="9.5" width="3.5" height="3" rx="0.5" fill="currentColor" opacity="0.8"/>
+            <rect x="5" y="9.5" width="3.5" height="3" rx="0.5" fill="currentColor" opacity="0.8"/>
+          </svg>
+          PDF.js 1.1 vs 1.2
+        </Link>
       </div>
 
       {/* Prototype cards */}
